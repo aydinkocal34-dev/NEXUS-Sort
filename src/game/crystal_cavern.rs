@@ -41,7 +41,7 @@ impl CrystalCavernLevel {
             "YRGBYRGB",
             "RBGYRBGY",
             "GYBRGYBR",
-            "BRYG BRYG".replace(' ', ""),
+            "BRYGBRYG",
             "YGRBYGRB",
         ];
         let row_refs: Vec<&str> = rows.iter().map(String::as_str).collect();
