@@ -1,9 +1,10 @@
 use macroquad::prelude::*;
+use macroquad::file::{load_file, save_file};
 use nexus_sort::game::board::Color as GemColor;
 use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
 use nexus_sort::game::lives::{LevelOutcome, PlayerState, REFILL_INTERVAL_MS};
 
-fn window_conf() -> Conf {
+fn encode_player(player: &PlayerState) -> Vec<u8> {\n    format!("{}\\n{}\\n{}\\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()\n}\n\nfn decode_player(bytes: &[u8], now_ms: u64) -> PlayerState {\n    let parsed = std::str::from_utf8(bytes).ok().and_then(|text| {\n        let mut parts = text.lines();\n        Some(PlayerState {\n            lives: parts.next()?.parse().ok()?,\n            last_refill_at_ms: parts.next()?.parse().ok()?,\n            pending_ms: parts.next()?.parse().ok()?,\n            level_progress: parts.next()?.parse().ok()?,\n        })\n    });\n    match parsed { Some(mut state) => { state.clamp_lives(); state }, None => PlayerState::new(now_ms) }\n}\n\nfn window_conf() -> Conf {
     Conf {
         window_title: "NEXUS SORT - Kristal Magarasi".to_owned(),
         window_width: 450,
@@ -59,7 +60,7 @@ async fn main() {
         }
     };
     let now_ms = || -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis().min(u64::MAX as u128) as u64).unwrap_or(0) };
-    let mut player = PlayerState::new(now_ms());
+    let mut player = match load_file("nexus_sort_save.txt").await {\n        Ok(bytes) => decode_player(&bytes, now_ms()),\n        Err(_) => PlayerState::new(now_ms()),\n    };\n    let initial_refill = player.apply_refill(now_ms());\n    let mut last_saved_lives = player.lives;\n    let mut last_saved_pending = player.pending_ms;\n    let mut last_saved_progress = player.level_progress;\n    if initial_refill.clock_anomaly == nexus_sort::game::lives::ClockAnomaly::None { let _ = save_file("nexus_sort_save.txt", &encode_player(&player)).await; }
     let mut result_message = String::new();
     let mut result_timer = 0.0_f32;
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
