@@ -61,6 +61,10 @@ async fn main() {
     let mut message_timer = 4.0_f32;
     let mut show_map = true;
     let mut completed_levels = 0_u32;
+    let mut lives = 5_u8;
+    let mut moves_left = 25_u32;
+    let mut next_life_at: Option<f64> = None;
+    let mut lives_screen = false;
 
     loop {
         let w = screen_width();
@@ -97,6 +101,15 @@ async fn main() {
                 draw_text(names[i], label_x, *y + 5.0, 13.0, if unlocked { WHITE } else { Color::new(0.48, 0.54, 0.68, 1.0) });
             }
             draw_text("1. BOLUM", 24.0, h - 58.0, 15.0, Color::new(0.0, 0.88, 1.0, 1.0));
+            if lives == 0 {
+                draw_rectangle(24.0, h * 0.40, w - 48.0, 150.0, Color::new(0.025, 0.035, 0.10, 0.98));
+                draw_rectangle_lines(24.0, h * 0.40, w - 48.0, 150.0, 2.0, Color::new(1.0, 0.22, 0.42, 1.0));
+                draw_text("CANLAR BITTI!", 42.0, h * 0.40 + 35.0, 24.0, WHITE);
+                let remain = next_life_at.map(|t| (t - get_time()).max(0.0) as u64).unwrap_or(1800);
+                draw_text(&format!("Yeni can: {:02}:{:02}", remain / 60, remain % 60), 42.0, h * 0.40 + 68.0, 18.0, Color::new(0.0, 0.88, 1.0, 1.0));
+                draw_text("Can satin alma: Google Play gerekli", 42.0, h * 0.40 + 103.0, 13.0, Color::new(1.0, 0.80, 0.18, 1.0));
+                draw_text("Su an satin alma aktif degil", 42.0, h * 0.40 + 127.0, 12.0, Color::new(0.66, 0.73, 0.86, 1.0));
+            }
             draw_text(if completed_levels > 0 { "Tamamlandi - sonraki bolum yakinda" } else { "Baslamak icin 1. bolume dokun" }, 24.0, h - 34.0, 12.0, Color::new(0.72, 0.82, 1.0, 1.0));
             if is_mouse_button_pressed(MouseButton::Left) {
                 let (mx, my) = mouse_position();
@@ -126,7 +139,8 @@ async fn main() {
         let progress = (level.score() as f32 / TARGET_SCORE as f32).clamp(0.0, 1.0);
         draw_rectangle(30.0, 174.0, w - 60.0, 10.0, Color::new(0.12, 0.16, 0.30, 1.0));
         draw_rectangle(30.0, 174.0, (w - 60.0) * progress, 10.0, Color::new(0.0, 0.88, 1.0, 1.0));
-        draw_text(&format!("HAMLE: {}", level.moves()), 30.0, 194.0, 13.0, Color::new(0.72, 0.82, 1.0, 1.0));
+        draw_text(&format!("HAMLE: {}  KALAN: {}", level.moves(), moves_left), 30.0, 194.0, 13.0, Color::new(0.72, 0.82, 1.0, 1.0));
+        draw_text(&format!("CAN: {}/5", lives), w - 110.0, 194.0, 13.0, Color::new(1.0, 0.38, 0.52, 1.0));
 
         let cell = ((w - 34.0) / 8.0).min(62.0);
         let board_size = cell * 8.0;
