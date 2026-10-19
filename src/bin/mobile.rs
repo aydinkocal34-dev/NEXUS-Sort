@@ -5,7 +5,7 @@ use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
 use nexus_sort::game::lives::{LevelOutcome, PlayerState, REFILL_INTERVAL_MS};
 
 fn encode_player(player: &PlayerState) -> Vec<u8> {
-    format!("{}\\n{}\\n{}\\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()
+    format!("{}\n{}\n{}\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()
 }
 
 fn decode_player(bytes: &[u8], now_ms: u64) -> PlayerState {
