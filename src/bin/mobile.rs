@@ -108,7 +108,7 @@ async fn main() {
                 draw_rectangle(24.0, h * 0.40, w - 48.0, 150.0, Color::new(0.025, 0.035, 0.10, 0.98));
                 draw_rectangle_lines(24.0, h * 0.40, w - 48.0, 150.0, 2.0, Color::new(1.0, 0.22, 0.42, 1.0));
                 draw_text("CANLAR BITTI!", 42.0, h * 0.40 + 35.0, 24.0, WHITE);
-                let remain = next_life_at.map(|t| (t - get_time()).max(0.0) as u64).unwrap_or(1800);
+                let remain = player.remaining_refill_ms().saturating_add(999) / 1000;
                 draw_text(&format!("Yeni can: {:02}:{:02}", remain / 60, remain % 60), 42.0, h * 0.40 + 68.0, 18.0, Color::new(0.0, 0.88, 1.0, 1.0));
                 draw_text("Can satin alma: Google Play gerekli", 42.0, h * 0.40 + 103.0, 13.0, Color::new(1.0, 0.80, 0.18, 1.0));
                 draw_text("Su an satin alma aktif degil", 42.0, h * 0.40 + 127.0, 12.0, Color::new(0.66, 0.73, 0.86, 1.0));
