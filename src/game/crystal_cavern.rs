@@ -112,7 +112,7 @@ mod tests {
                         let b = level.board().cell(row, col + 1);
                         let c = level.board().cell(row, col + 2);
                         assert!(a.is_ok() && b.is_ok() && c.is_ok());
-                        assert!(a.ok() != b.ok() || b.ok() != c.ok());
+                        assert!(a.as_ref().ok() != b.as_ref().ok() || b.as_ref().ok() != c.as_ref().ok());
                     }
                     if row + 2 < 8 {
                         let a = level.board().cell(row, col);
