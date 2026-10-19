@@ -59,11 +59,58 @@ async fn main() {
     };
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
     let mut message_timer = 4.0_f32;
+    let mut show_map = true;
+    let mut completed_levels = 0_u32;
 
     loop {
         let w = screen_width();
         let h = screen_height();
         draw_background();
+
+        if show_map {
+            draw_text("NEXUS", 24.0, 52.0, 30.0, Color::new(0.0, 0.88, 1.0, 1.0));
+            draw_text("MACERA HARITASI", 24.0, 84.0, 19.0, WHITE);
+            draw_text("Kristallerin yolculugu basliyor", 24.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
+            draw_rectangle(16.0, 130.0, w - 32.0, h - 170.0, Color::new(0.04, 0.07, 0.17, 0.88));
+            // Winding path connecting level nodes.
+            let nodes: [(f32, f32); 7] = [
+                (w * 0.28, h * 0.27), (w * 0.62, h * 0.36),
+                (w * 0.34, h * 0.46), (w * 0.68, h * 0.56),
+                (w * 0.34, h * 0.66), (w * 0.62, h * 0.76),
+                (w * 0.43, h * 0.85),
+            ];
+            for pair in nodes.windows(2) {
+                draw_line(pair[0].0, pair[0].1, pair[1].0, pair[1].1, 8.0, Color::new(0.13, 0.24, 0.43, 1.0));
+                draw_line(pair[0].0, pair[0].1, pair[1].0, pair[1].1, 3.0, Color::new(0.0, 0.72, 0.90, 0.55));
+            }
+            let names = ["Kristal Magarasi", "Neon Ormani", "Buz Tapinagi", "Lav Vadisi", "Yildiz Koprusu", "Golge Kalesi", "NEXUS Kapisi"];
+            for (i, (x, y)) in nodes.iter().enumerate() {
+                let unlocked = i == 0 || (i == 1 && completed_levels >= 1);
+                let done = i == 0 && completed_levels >= 1;
+                let c = if done { Color::new(0.0, 0.95, 0.48, 1.0) } else if unlocked { Color::new(0.0, 0.82, 1.0, 1.0) } else { Color::new(0.22, 0.29, 0.43, 1.0) };
+                draw_circle(*x, *y, 28.0, Color::new(c.r, c.g, c.b, 0.16));
+                draw_circle(*x, *y, 20.0, c);
+                draw_circle(*x, *y, 14.0, Color::new(0.04, 0.08, 0.18, 1.0));
+                let label = if done { "✓".to_string() } else if unlocked { (i + 1).to_string() } else { "🔒".to_string() };
+                draw_text(&label, *x - 8.0, *y + 7.0, 22.0, WHITE);
+                let label_x = if *x > w * 0.5 { *x - 145.0 } else { *x + 34.0 };
+                draw_text(names[i], label_x, *y + 5.0, 13.0, if unlocked { WHITE } else { Color::new(0.48, 0.54, 0.68, 1.0) });
+            }
+            draw_text("1. BOLUM", 24.0, h - 58.0, 15.0, Color::new(0.0, 0.88, 1.0, 1.0));
+            draw_text(if completed_levels > 0 { "Tamamlandi - sonraki bolum yakinda" } else { "Baslamak icin 1. bolume dokun" }, 24.0, h - 34.0, 12.0, Color::new(0.72, 0.82, 1.0, 1.0));
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let (mx, my) = mouse_position();
+                let (x, y) = nodes[0];
+                if (mx - x).powi(2) + (my - y).powi(2) <= 42.0_f32.powi(2) {
+                    if let Ok(new_level) = CrystalCavernLevel::new() { level = new_level; }
+                    show_map = false;
+                    message = String::from("1. Bolum: Kristal Magarasi");
+                    message_timer = 3.0;
+                }
+            }
+            next_frame().await;
+            continue;
+        }
 
         draw_text("NEXUS", 22.0, 48.0, 24.0, Color::new(0.0, 0.88, 1.0, 1.0));
         draw_text("SORT", 112.0, 48.0, 24.0, Color::new(0.78, 0.28, 1.0, 1.0));
@@ -118,13 +165,8 @@ async fn main() {
         if is_mouse_button_pressed(MouseButton::Left) {
             let (mx, my) = mouse_position();
             if level.is_complete() {
-                if my > board_y && my < board_y + board_size {
-                    if let Ok(new_level) = CrystalCavernLevel::new() {
-                        level = new_level;
-                        message = String::from("Yeni macera basladi!");
-                        message_timer = 3.0;
-                    }
-                }
+                completed_levels = completed_levels.max(1);
+                show_map = true;
             } else if mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
                 let col = ((mx - board_x) / cell) as usize;
                 let row = ((my - board_y) / cell) as usize;
