@@ -1,5 +1,6 @@
 pub mod board;
 pub mod level;
+pub mod lives;
 
 use board::{Board, BoardError};
 use level::{create_board, LevelDefinition};
