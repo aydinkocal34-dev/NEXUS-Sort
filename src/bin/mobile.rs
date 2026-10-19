@@ -210,7 +210,9 @@ async fn main() {
 
         if is_mouse_button_pressed(MouseButton::Left) {
             let (mx, my) = mouse_position();
-            if level.is_complete() {
+            if level_finished && !level.is_complete() {
+                show_map = true;
+            } else if level.is_complete() {
                 completed_levels = completed_levels.max(1);
                 show_map = true;
             } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
