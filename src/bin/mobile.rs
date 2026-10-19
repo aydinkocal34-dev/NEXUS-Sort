@@ -80,7 +80,15 @@ async fn main() {
         }
     };
     let now_ms = || -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis().min(u64::MAX as u128) as u64).unwrap_or(0) };
-    let mut player = match load_file("nexus_sort_save.txt").await {\n        Ok(bytes) => decode_player(&bytes, now_ms()),\n        Err(_) => PlayerState::new(now_ms()),\n    };\n    let initial_refill = player.apply_refill(now_ms());\n    let mut last_saved_lives = player.lives;\n    let mut last_saved_pending = player.pending_ms;\n    let mut last_saved_progress = player.level_progress;\n    if initial_refill.clock_anomaly == nexus_sort::game::lives::ClockAnomaly::None { let _ = save_file("nexus_sort_save.txt", &encode_player(&player)).await; }
+    let mut player = match load_file("nexus_sort_save.txt").await {
+        Ok(bytes) => decode_player(&bytes, now_ms()),
+        Err(_) => PlayerState::new(now_ms()),
+    };
+    let initial_refill = player.apply_refill(now_ms());
+    let mut last_saved_lives = player.lives;
+    let mut last_saved_pending = player.pending_ms;
+    let mut last_saved_progress = player.level_progress;
+    if initial_refill.clock_anomaly == nexus_sort::game::lives::ClockAnomaly::None { let _ = save_file("nexus_sort_save.txt", &encode_player(&player)).await; }
     let mut result_message = String::new();
     let mut result_timer = 0.0_f32;
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
