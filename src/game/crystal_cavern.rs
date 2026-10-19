@@ -138,9 +138,9 @@ mod tests {
             assert!(board.is_ok());
             if let Ok(board) = board {
                 level.board = board;
-                assert_eq!(level.play_at(0, 0), Ok(4));
-                assert_eq!(level.score(), 40);
-                assert_eq!(level.remaining_target(), 460);
+                assert_eq!(level.play_at(0, 0), Ok(5));
+                assert_eq!(level.score(), 50);
+                assert_eq!(level.remaining_target(), 450);
             }
         }
     }
