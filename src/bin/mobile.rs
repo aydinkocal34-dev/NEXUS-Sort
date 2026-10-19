@@ -1,27 +1,25 @@
 use macroquad::prelude::*;
-use macroquad::file::{load_file, save_file};
+use macroquad::experimental::collections::storage;
 use nexus_sort::game::board::Color as GemColor;
 use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
-use nexus_sort::game::lives::{LevelOutcome, PlayerState, REFILL_INTERVAL_MS};
+use nexus_sort::game::lives::{ClockAnomaly, LevelOutcome, PlayerState};
 
-fn encode_player(player: &PlayerState) -> Vec<u8> {
-    format!("{}\n{}\n{}\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()
+fn load_player(now_ms: u64) -> PlayerState {
+    let mut player = PlayerState {
+        lives: storage::load("nexus_sort_lives").unwrap_or(5_u8),
+        last_refill_at_ms: storage::load("nexus_sort_last_refill").unwrap_or(now_ms),
+        pending_ms: storage::load("nexus_sort_pending_ms").unwrap_or(0_u64),
+        level_progress: storage::load("nexus_sort_level_progress").unwrap_or(0_u32),
+    };
+    player.clamp_lives();
+    player
 }
 
-fn decode_player(bytes: &[u8], now_ms: u64) -> PlayerState {
-    let parsed = std::str::from_utf8(bytes).ok().and_then(|text| {
-        let mut parts = text.lines();
-        Some(PlayerState {
-            lives: parts.next()?.parse().ok()?,
-            last_refill_at_ms: parts.next()?.parse().ok()?,
-            pending_ms: parts.next()?.parse().ok()?,
-            level_progress: parts.next()?.parse().ok()?,
-        })
-    });
-    match parsed {
-        Some(mut state) => { state.clamp_lives(); state }
-        None => PlayerState::new(now_ms),
-    }
+fn save_player(player: &PlayerState) {
+    storage::store("nexus_sort_lives", &player.lives);
+    storage::store("nexus_sort_last_refill", &player.last_refill_at_ms);
+    storage::store("nexus_sort_pending_ms", &player.pending_ms);
+    storage::store("nexus_sort_level_progress", &player.level_progress);
 }
 
 fn window_conf() -> Conf {
@@ -80,15 +78,11 @@ async fn main() {
         }
     };
     let now_ms = || -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis().min(u64::MAX as u128) as u64).unwrap_or(0) };
-    let mut player = match load_file("nexus_sort_save.txt").await {
-        Ok(bytes) => decode_player(&bytes, now_ms()),
-        Err(_) => PlayerState::new(now_ms()),
-    };
+    let mut player = load_player(now_ms());
     let initial_refill = player.apply_refill(now_ms());
-    let mut last_saved_lives = player.lives;
-    let mut last_saved_pending = player.pending_ms;
-    let mut last_saved_progress = player.level_progress;
-    if initial_refill.clock_anomaly == nexus_sort::game::lives::ClockAnomaly::None { let _ = save_file("nexus_sort_save.txt", &encode_player(&player)).await; }
+    if initial_refill.clock_anomaly == ClockAnomaly::None {
+        save_player(&player);
+    }
     let mut result_message = String::new();
     let mut result_timer = 0.0_f32;
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
@@ -172,7 +166,7 @@ async fn main() {
         draw_rectangle(30.0, 174.0, w - 60.0, 10.0, Color::new(0.12, 0.16, 0.30, 1.0));
         draw_rectangle(30.0, 174.0, (w - 60.0) * progress, 10.0, Color::new(0.0, 0.88, 1.0, 1.0));
         draw_text(&format!("HAMLE: {}  KALAN: {}", level.moves(), moves_left), 30.0, 194.0, 13.0, Color::new(0.72, 0.82, 1.0, 1.0));
-        draw_text(&format!("CAN: {}/5", lives), w - 110.0, 194.0, 13.0, Color::new(1.0, 0.38, 0.52, 1.0));
+        draw_text(&format!("CAN: {}/5", player.lives), w - 110.0, 194.0, 13.0, Color::new(1.0, 0.38, 0.52, 1.0));
 
         let cell = ((w - 34.0) / 8.0).min(62.0);
         let board_size = cell * 8.0;
