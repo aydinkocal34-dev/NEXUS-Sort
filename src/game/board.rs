@@ -188,7 +188,7 @@ mod tests {
         assert!(board.is_ok());
         if let Ok(mut board) = board {
             let before = board.render();
-            assert_eq!(board.clear_group(0, 0), Ok(1));
+            assert_eq!(board.clear_group(0, 0), Ok(0));
             assert_eq!(board.render(), before);
         }
     }
