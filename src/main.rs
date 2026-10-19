@@ -1,8 +1,6 @@
-mod game;
-
-use game::level::{get_level, LEVELS};
-use game::crystal_cavern::CrystalCavernLevel;
-use game::GameState;
+use nexus_sort::game::level::{get_level, LEVELS};
+use nexus_sort::game::crystal_cavern::CrystalCavernLevel;
+use nexus_sort::game::GameState;
 use std::io::{self, Write};
 
 fn read_line() -> io::Result<String> {
