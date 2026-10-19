@@ -86,7 +86,7 @@ async fn main() {
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
     let mut message_timer = 4.0_f32;
     let mut show_map = true;
-    let mut completed_levels = 0_u32;
+    let mut completed_levels = player.level_progress;
     let mut level_finished = false;
     let mut moves_left = 25_u32;
 
