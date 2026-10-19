@@ -4,7 +4,27 @@ use nexus_sort::game::board::Color as GemColor;
 use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
 use nexus_sort::game::lives::{LevelOutcome, PlayerState, REFILL_INTERVAL_MS};
 
-fn encode_player(player: &PlayerState) -> Vec<u8> {\n    format!("{}\\n{}\\n{}\\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()\n}\n\nfn decode_player(bytes: &[u8], now_ms: u64) -> PlayerState {\n    let parsed = std::str::from_utf8(bytes).ok().and_then(|text| {\n        let mut parts = text.lines();\n        Some(PlayerState {\n            lives: parts.next()?.parse().ok()?,\n            last_refill_at_ms: parts.next()?.parse().ok()?,\n            pending_ms: parts.next()?.parse().ok()?,\n            level_progress: parts.next()?.parse().ok()?,\n        })\n    });\n    match parsed { Some(mut state) => { state.clamp_lives(); state }, None => PlayerState::new(now_ms) }\n}\n\nfn window_conf() -> Conf {
+fn encode_player(player: &PlayerState) -> Vec<u8> {
+    format!("{}\\n{}\\n{}\\n{}", player.lives, player.last_refill_at_ms, player.pending_ms, player.level_progress).into_bytes()
+}
+
+fn decode_player(bytes: &[u8], now_ms: u64) -> PlayerState {
+    let parsed = std::str::from_utf8(bytes).ok().and_then(|text| {
+        let mut parts = text.lines();
+        Some(PlayerState {
+            lives: parts.next()?.parse().ok()?,
+            last_refill_at_ms: parts.next()?.parse().ok()?,
+            pending_ms: parts.next()?.parse().ok()?,
+            level_progress: parts.next()?.parse().ok()?,
+        })
+    });
+    match parsed {
+        Some(mut state) => { state.clamp_lives(); state }
+        None => PlayerState::new(now_ms),
+    }
+}
+
+fn window_conf() -> Conf {
     Conf {
         window_title: "NEXUS SORT - Kristal Magarasi".to_owned(),
         window_width: 450,
