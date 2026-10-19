@@ -44,7 +44,7 @@ impl CrystalCavernLevel {
             "BRYGBRYG",
             "YGRBYGRB",
         ];
-        let row_refs: Vec<&str> = rows.iter().map(String::as_str).collect();
+        let row_refs: Vec<&str> = rows.iter().copied().collect();
         let board = Board::from_symbols(&row_refs, 0xC0A57A1)?;
         Ok(Self { board, score: 0, moves: 0, cleared_crystals: 0 })
     }
