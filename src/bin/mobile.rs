@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 use nexus_sort::game::board::Color as GemColor;
 use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
+use nexus_sort::game::lives::{LevelOutcome, PlayerState, REFILL_INTERVAL_MS};
 
 fn window_conf() -> Conf {
     Conf {
@@ -57,14 +58,16 @@ async fn main() {
             }
         }
     };
+    let now_ms = || -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis().min(u64::MAX as u128) as u64).unwrap_or(0) };
+    let mut player = PlayerState::new(now_ms());
+    let mut result_message = String::new();
+    let mut result_timer = 0.0_f32;
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
     let mut message_timer = 4.0_f32;
     let mut show_map = true;
     let mut completed_levels = 0_u32;
-    let mut lives = 5_u8;
+    let mut level_finished = false;
     let mut moves_left = 25_u32;
-    let mut next_life_at: Option<f64> = None;
-    let mut lives_screen = false;
 
     loop {
         let w = screen_width();
@@ -101,7 +104,7 @@ async fn main() {
                 draw_text(names[i], label_x, *y + 5.0, 13.0, if unlocked { WHITE } else { Color::new(0.48, 0.54, 0.68, 1.0) });
             }
             draw_text("1. BOLUM", 24.0, h - 58.0, 15.0, Color::new(0.0, 0.88, 1.0, 1.0));
-            if lives == 0 {
+            if player.lives == 0 {
                 draw_rectangle(24.0, h * 0.40, w - 48.0, 150.0, Color::new(0.025, 0.035, 0.10, 0.98));
                 draw_rectangle_lines(24.0, h * 0.40, w - 48.0, 150.0, 2.0, Color::new(1.0, 0.22, 0.42, 1.0));
                 draw_text("CANLAR BITTI!", 42.0, h * 0.40 + 35.0, 24.0, WHITE);
@@ -181,7 +184,7 @@ async fn main() {
             if level.is_complete() {
                 completed_levels = completed_levels.max(1);
                 show_map = true;
-            } else if mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
+            } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
                 let col = ((mx - board_x) / cell) as usize;
                 let row = ((my - board_y) / cell) as usize;
                 match level.play_at(row, col) {
