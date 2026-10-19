@@ -119,7 +119,7 @@ mod tests {
                         let b = level.board().cell(row + 1, col);
                         let c = level.board().cell(row + 2, col);
                         assert!(a.is_ok() && b.is_ok() && c.is_ok());
-                        assert!(a.ok() != b.ok() || b.ok() != c.ok());
+                        assert!(a.as_ref().ok() != b.as_ref().ok() || b.as_ref().ok() != c.as_ref().ok());
                     }
                 }
             }
