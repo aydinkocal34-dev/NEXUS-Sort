@@ -39,7 +39,7 @@ fn window_conf() -> Conf {
         window_width: 450,
         window_height: 900,
         high_dpi: true,
-        sample_count: 4,
+        sample_count: 1,
         ..Default::default()
     }
 }
@@ -119,11 +119,14 @@ async fn main() {
             draw_text("Kristallerin yolculugu basliyor", 24.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
             draw_rectangle(16.0, 130.0, w - 32.0, h - 170.0, Color::new(0.04, 0.07, 0.17, 0.88));
             // Winding path connecting level nodes.
+            let map_top = 190.0_f32.min(h * 0.18);
+            let map_bottom = h - 150.0;
+            let map_span = (map_bottom - map_top).max(300.0);
             let nodes: [(f32, f32); 7] = [
-                (w * 0.28, h * 0.27), (w * 0.62, h * 0.36),
-                (w * 0.34, h * 0.46), (w * 0.68, h * 0.56),
-                (w * 0.34, h * 0.66), (w * 0.62, h * 0.76),
-                (w * 0.43, h * 0.85),
+                (w * 0.27, map_top + map_span * 0.02), (w * 0.70, map_top + map_span * 0.17),
+                (w * 0.30, map_top + map_span * 0.33), (w * 0.70, map_top + map_span * 0.49),
+                (w * 0.30, map_top + map_span * 0.65), (w * 0.70, map_top + map_span * 0.81),
+                (w * 0.48, map_top + map_span * 0.97),
             ];
             for pair in nodes.windows(2) {
                 draw_line(pair[0].0, pair[0].1, pair[1].0, pair[1].1, 8.0, Color::new(0.13, 0.24, 0.43, 1.0));
@@ -134,13 +137,14 @@ async fn main() {
                 let unlocked = i == 0 || (i == 1 && completed_levels >= 1);
                 let done = i == 0 && completed_levels >= 1;
                 let c = if done { Color::new(0.0, 0.95, 0.48, 1.0) } else if unlocked { Color::new(0.0, 0.82, 1.0, 1.0) } else { Color::new(0.22, 0.29, 0.43, 1.0) };
-                draw_circle(*x, *y, 28.0, Color::new(c.r, c.g, c.b, 0.16));
-                draw_circle(*x, *y, 20.0, c);
-                draw_circle(*x, *y, 14.0, Color::new(0.04, 0.08, 0.18, 1.0));
-                let label = if done { "✓".to_string() } else if unlocked { (i + 1).to_string() } else { "🔒".to_string() };
-                draw_text(&label, *x - 8.0, *y + 7.0, 22.0, WHITE);
-                let label_x = if *x > w * 0.5 { *x - 145.0 } else { *x + 34.0 };
-                draw_text(names[i], label_x, *y + 5.0, 13.0, if unlocked { WHITE } else { Color::new(0.48, 0.54, 0.68, 1.0) });
+                let node_r = (w * 0.065).clamp(25.0, 38.0);
+                draw_circle(*x, *y, node_r + 10.0, Color::new(c.r, c.g, c.b, 0.16));
+                draw_circle(*x, *y, node_r, c);
+                draw_circle(*x, *y, node_r * 0.70, Color::new(0.04, 0.08, 0.18, 1.0));
+                let label = if done { "✓".to_string() } else if unlocked { (i + 1).to_string() } else { "X".to_string() };
+                draw_text(&label, *x - node_r * 0.30, *y + node_r * 0.32, node_r * 0.95, WHITE);
+                let label_x = if *x > w * 0.5 { *x - w * 0.42 } else { *x + node_r + 12.0 };
+                draw_text(names[i], label_x, *y + 5.0, 16.0, if unlocked { WHITE } else { Color::new(0.62, 0.68, 0.80, 1.0) });
             }
             draw_text("1. BOLUM", 24.0, h - 58.0, 15.0, Color::new(0.0, 0.88, 1.0, 1.0));
             if player.lives == 0 {
@@ -156,7 +160,8 @@ async fn main() {
             if is_mouse_button_pressed(MouseButton::Left) {
                 let (mx, my) = mouse_position();
                 let (x, y) = nodes[0];
-                if (mx - x).powi(2) + (my - y).powi(2) <= 42.0_f32.powi(2) && player.lives > 0 {
+                let hit_radius = (w * 0.085).clamp(34.0, 48.0);
+                if (mx - x).powi(2) + (my - y).powi(2) <= hit_radius.powi(2) && player.lives > 0 {
                     if let Ok(new_level) = CrystalCavernLevel::new() {
                         level = new_level;
                         show_map = false;
@@ -189,10 +194,11 @@ async fn main() {
         draw_text(&format!("HAMLE: {}  KALAN: {}", level.moves(), moves_left), 30.0, 194.0, 13.0, Color::new(0.72, 0.82, 1.0, 1.0));
         draw_text(&format!("CAN: {}/5", player.lives), w - 110.0, 194.0, 13.0, Color::new(1.0, 0.38, 0.52, 1.0));
 
-        let cell = ((w - 34.0) / 8.0).min(62.0);
+        let available_board_h = (h - 300.0).max(240.0);
+        let cell = (((w - 28.0) / 8.0).min(available_board_h / 8.0)).max(1.0);
         let board_size = cell * 8.0;
         let board_x = (w - board_size) * 0.5;
-        let board_y = (h * 0.30).max(222.0).min(h - board_size - 112.0);
+        let board_y = 220.0_f32.min((h - board_size - 100.0).max(190.0));
         draw_rectangle(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, Color::new(0.05, 0.10, 0.23, 0.96));
         draw_rectangle_lines(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, 2.0, Color::new(0.0, 0.82, 1.0, 0.8));
 
