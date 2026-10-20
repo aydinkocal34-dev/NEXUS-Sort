@@ -76,7 +76,7 @@ fn pointer_position() -> Vec2 {
         .iter()
         .find(|touch| touch.phase == TouchPhase::Started)
         .map(|touch| touch.position)
-        .unwrap_or_else(|| mouse_position())
+        .unwrap_or_else(|| { let (x, y) = mouse_position(); vec2(x, y) })
 }
 
 fn draw_background() {
