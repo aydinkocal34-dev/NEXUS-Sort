@@ -71,6 +71,15 @@ jobs:
               yes | "$SDKMANAGER" --licenses >/dev/null || true
               "$SDKMANAGER" "platforms;android-29" "build-tools;29.0.3" "platform-tools"
               test -f /opt/android-sdk-linux/platforms/android-29/android.jar
+              echo "Updating the container Rust toolchain; bundled Rust 1.79 is too old for current dependencies."
+              if ! command -v rustup >/dev/null 2>&1; then
+                echo "rustup is unavailable in notfl3/cargo-apk; cannot safely update Rust in this image."
+                exit 1
+              fi
+              rustup update stable
+              rustup default stable
+              rustup target add aarch64-linux-android
+              rustc --version
               cargo quad-apk build --release --bin mobile
             '
       - name: Upload Android APK
