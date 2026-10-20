@@ -62,7 +62,17 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}:/root/src" \
             -w /root/src \
-            notfl3/cargo-apk cargo quad-apk build --release --bin mobile
+            notfl3/cargo-apk sh -lc '
+              set -eu
+              export ANDROID_HOME=/opt/android-sdk-linux
+              export ANDROID_SDK_ROOT=/opt/android-sdk-linux
+              SDKMANAGER=/opt/android-sdk-linux/tools/bin/sdkmanager
+              echo "Installing Android SDK platform and build tools inside the same container..."
+              yes | "$SDKMANAGER" --licenses >/dev/null || true
+              "$SDKMANAGER" "platforms;android-29" "build-tools;29.0.3" "platform-tools"
+              test -f /opt/android-sdk-linux/platforms/android-29/android.jar
+              cargo quad-apk build --release --bin mobile
+            '
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
