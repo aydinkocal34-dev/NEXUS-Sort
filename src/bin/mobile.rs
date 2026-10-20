@@ -201,6 +201,22 @@ async fn main() {
             continue;
         }
 
+        if game_state == GameState::LevelComplete {
+            let w = screen_width(); let h = screen_height();
+            let pw = (w * 0.86).min(420.0); let ph = 300.0; let px = (w-pw)*0.5; let py = (h-ph)*0.5;
+            draw_panel_texture(assets.level_complete.as_ref().or(assets.panel.as_ref()), px, py, pw, ph, Color::new(0.025, 0.055, 0.16, 0.98));
+            draw_rectangle_lines(px, py, pw, ph, 2.0, Color::new(1.0, 0.80, 0.12, 1.0));
+            draw_text("BOLUM TAMAMLANDI!", px+20.0, py+48.0, 24.0, Color::new(1.0, 0.86, 0.20, 1.0));
+            draw_text(&format!("Skor: {}", level.score()), px+24.0, py+94.0, 22.0, WHITE);
+            draw_text(&format!("Yildizlar: {} / 3", stars.max(1)), px+24.0, py+132.0, 20.0, Color::new(1.0, 0.86, 0.20, 1.0));
+            let bw = pw-48.0; let by = py+ph-88.0;
+            draw_panel_texture(assets.button.as_ref(), px+24.0, by, bw, 58.0, Color::new(0.02, 0.46, 0.30, 1.0));
+            draw_text("HARITAYA DON", px+pw*0.5-76.0, by+37.0, 22.0, WHITE);
+            draw_text("Sonraki bolum yeni icerik olarak eklenecek", px+24.0, py+ph-12.0, 11.0, Color::new(0.72, 0.82, 1.0, 1.0));
+            if just_pressed() { let p = pointer_position(); if p.x >= px+24.0 && p.x <= px+24.0+bw && p.y >= by && p.y <= by+58.0 { game_state = GameState::Map; } }
+            next_frame().await; continue;
+        }
+
         draw_text("NEXUS", 22.0, 48.0, 24.0, Color::new(0.0, 0.88, 1.0, 1.0));
         draw_text("SORT", 112.0, 48.0, 24.0, Color::new(0.78, 0.28, 1.0, 1.0));
         draw_text("KRISTAL MAGARASI", 22.0, 78.0, 17.0, Color::new(0.82, 0.88, 1.0, 1.0));
@@ -279,7 +295,16 @@ async fn main() {
             } else {
                 draw_text("Bagli ayni renk kristallere dokun", 22.0, board_y + board_size + 38.0, 15.0, Color::new(0.68, 0.78, 0.98, 1.0));
             }
-            draw_text("NEON KRISTALLER  /  BOLUM 01", 22.0, h - 24.0, 12.0, Color::new(0.38, 0.54, 0.78, 1.0));
+            draw_text("NEON KRISTALLER  /  BOLUM 01", 22.0, h - 82.0, 12.0, Color::new(0.38, 0.54, 0.78, 1.0));
+            // Reserved, responsive power-up strip. Icons appear automatically when assets are supplied.
+            let power_y = h - 68.0; let icon_side = (w * 0.14).clamp(38.0, 54.0); let gap = (w - icon_side * 4.0) / 5.0;
+            let power_assets = [&assets.hammer, &assets.bomb, &assets.rainbow, &assets.shuffle];
+            let power_labels = ["CEKIC", "BOMBA", "YILDIZ", "KARISTIR"];
+            for i in 0..4 {
+                let x = gap + i as f32 * (icon_side + gap);
+                draw_panel_texture(power_assets[i].as_ref(), x, power_y, icon_side, icon_side, Color::new(0.07, 0.12, 0.27, 0.95));
+                if power_assets[i].is_none() { draw_text(power_labels[i], x, power_y + icon_side + 12.0, 9.0, WHITE); }
+            }
         }
 
         if just_pressed() {
@@ -307,11 +332,13 @@ async fn main() {
                             player.apply_level_outcome(LevelOutcome::Success, now_ms());
                             completed_levels = player.level_progress;
                             outcome_applied = true;
+                            game_state = GameState::LevelComplete;
                             save_player(&player);
                         } else if moves_left == 0 && !level.is_complete() {
                             player.apply_level_outcome(LevelOutcome::Failure, now_ms());
                             level_finished = true;
                             outcome_applied = true;
+                            game_state = GameState::LevelComplete;
                             save_player(&player);
                         }
                     }
