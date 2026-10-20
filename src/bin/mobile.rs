@@ -12,6 +12,8 @@ struct GameAssets {
     bomb: Option<Texture2D>, rainbow: Option<Texture2D>, shuffle: Option<Texture2D>,
     match_blast: Option<Texture2D>, bubble: Option<Texture2D>, sparkle: Option<Texture2D>,
     shatter: Option<Texture2D>, pipo_happy: Option<Texture2D>, pipo_sad: Option<Texture2D>,
+    // Preload the remaining art pack so all committed PNG assets are available to the mobile build.
+    extras: Vec<Texture2D>,
 }
 impl GameAssets {
     async fn load() -> Self {
@@ -33,7 +35,26 @@ impl GameAssets {
             shatter: optional("assets/effect_shatter.png").await,
             pipo_happy: optional("assets/pipo_happy.png").await,
             pipo_sad: optional("assets/pipo_sad.png").await,
+            extras: Vec::new(),
+        };
+        let mut assets = assets;
+        // Keep every supplied PNG path wired into the runtime asset loader. Individual screens
+        // can adopt these textures incrementally without missing-file surprises.
+        for path in [
+            "assets/asset_atlas_reference.png", "assets/booster_plus5.png", "assets/btn_close.png",
+            "assets/btn_home.png", "assets/btn_level.png", "assets/btn_ok.png", "assets/btn_settings.png",
+            "assets/chest.png", "assets/coin.png", "assets/dialog_frame.png", "assets/effect_beam.png",
+            "assets/effect_glow.png", "assets/effect_line.png", "assets/effect_match_blue.png",
+            "assets/effect_match_pink.png", "assets/effect_swirl.png", "assets/gem_bomb.png",
+            "assets/gem_chain.png", "assets/gem_ice.png", "assets/gem_iceblock.png", "assets/gem_rainbow.png",
+            "assets/gem_rock.png", "assets/gem_stripe.png", "assets/gem_void.png", "assets/gem_wood.png",
+            "assets/key.png", "assets/level_failed.png", "assets/main_menu_mockup.png", "assets/nexus_crystal.png",
+            "assets/panel_wide.png", "assets/pipo_angry.png", "assets/pipo_idle.png", "assets/pipo_sleep.png",
+            "assets/pipo_surprised.png", "assets/settings_panel.png",
+        ] {
+            if let Some(texture) = optional(path).await { assets.extras.push(texture); }
         }
+        assets
     }
     fn gem(&self, c: GemColor) -> Option<&Texture2D> {
         match c { GemColor::Red=>self.gem_red.as_ref(), GemColor::Blue=>self.gem_blue.as_ref(),
