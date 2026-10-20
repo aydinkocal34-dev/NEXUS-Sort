@@ -14,6 +14,10 @@ android_version = 30
 target_sdk_version = 30
 min_sdk_version = 24
 build_targets = ["aarch64-linux-android"]
+opengles_version_major = 3
+opengles_version_minor = 0
 
 [package.metadata.android.activity_attributes]
 "android:exported" = "true"
+"android:configChanges" = "orientation|keyboardHidden|screenSize|screenLayout"
+"android:resizeableActivity" = "true"
