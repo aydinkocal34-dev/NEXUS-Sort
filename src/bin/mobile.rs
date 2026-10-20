@@ -68,6 +68,17 @@ fn just_pressed() -> bool {
         || touches().iter().any(|touch| touch.phase == TouchPhase::Started)
 }
 
+// Android touch coordinates must come from the touch event itself.
+// mouse_position() can remain stale on devices when Macroquad does not
+// synthesize mouse motion from touch input.
+fn pointer_position() -> Vec2 {
+    touches()
+        .iter()
+        .find(|touch| touch.phase == TouchPhase::Started)
+        .map(|touch| touch.position)
+        .unwrap_or_else(|| mouse_position())
+}
+
 fn draw_background() {
     clear_background(Color::new(0.025, 0.035, 0.105, 1.0));
     draw_circle(screen_width() * 0.12, screen_height() * 0.20, 190.0, Color::new(0.0, 0.65, 1.0, 0.055));
@@ -167,7 +178,8 @@ async fn main() {
             }
             draw_text(if completed_levels > 0 { "Tamamlandi - sonraki bolum yakinda" } else { "Baslamak icin 1. bolume dokun" }, 24.0, h - 34.0, 12.0, Color::new(0.72, 0.82, 1.0, 1.0));
             if just_pressed() {
-                let (mx, my) = mouse_position();
+                let pointer = pointer_position();
+                let (mx, my) = (pointer.x, pointer.y);
                 let (x, y) = nodes[0];
                 let hit_radius = (w * 0.085).clamp(34.0, 48.0);
                 if (mx - x).powi(2) + (my - y).powi(2) <= hit_radius.powi(2) && player.lives > 0 {
@@ -264,7 +276,8 @@ async fn main() {
         }
 
         if just_pressed() {
-            let (mx, my) = mouse_position();
+            let pointer = pointer_position();
+                let (mx, my) = (pointer.x, pointer.y);
             if level_finished || level.is_complete() {
                 show_map = true;
             } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
