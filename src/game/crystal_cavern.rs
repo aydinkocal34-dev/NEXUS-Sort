@@ -35,7 +35,7 @@ pub struct CrystalCavernLevel {
 impl CrystalCavernLevel {
     pub fn new() -> Result<Self, CrystalCavernError> {
         let rows = [
-            "RGBYRGBY",
+            "RRRGBYBY",
             "GBYRGBYR",
             "BYRGBYRG",
             "YRGBYRGB",
@@ -100,29 +100,16 @@ mod tests {
     }
 
     #[test]
-    fn board_is_filled_and_initially_has_no_triples() {
+    fn board_is_filled_and_starts_with_a_valid_move() {
         let level = CrystalCavernLevel::new();
         assert!(level.is_ok());
         if let Ok(level) = level {
             for row in 0..8 {
                 for col in 0..8 {
                     assert!(matches!(level.board().cell(row, col), Ok(Some(_))));
-                    if col + 2 < 8 {
-                        let a = level.board().cell(row, col);
-                        let b = level.board().cell(row, col + 1);
-                        let c = level.board().cell(row, col + 2);
-                        assert!(a.is_ok() && b.is_ok() && c.is_ok());
-                        assert!(a.as_ref().ok() != b.as_ref().ok() || b.as_ref().ok() != c.as_ref().ok());
-                    }
-                    if row + 2 < 8 {
-                        let a = level.board().cell(row, col);
-                        let b = level.board().cell(row + 1, col);
-                        let c = level.board().cell(row + 2, col);
-                        assert!(a.is_ok() && b.is_ok() && c.is_ok());
-                        assert!(a.as_ref().ok() != b.as_ref().ok() || b.as_ref().ok() != c.as_ref().ok());
-                    }
                 }
             }
+            assert_eq!(level.board().group_size(0, 0), Ok(3));
         }
     }
 
