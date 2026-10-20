@@ -22,9 +22,9 @@ impl GameAssets {
             gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
             gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,
             button: optional("assets/button_green.png").await, panel: optional("assets/panel_blue.png").await,
-            level_complete: optional("assets/level_complete.png").await, hammer: optional("assets/power_hammer.png").await,
-            bomb: optional("assets/power_bomb.png").await, rainbow: optional("assets/power_rainbow.png").await,
-            shuffle: optional("assets/power_shuffle.png").await,
+            level_complete: optional("assets/level_complete.png").await, hammer: optional("assets/booster_hammer.png").await,
+            bomb: optional("assets/booster_bomb.png").await, rainbow: optional("assets/booster_rainbow.png").await,
+            shuffle: optional("assets/booster_shuffle.png").await,
         }
     }
     fn gem(&self, c: GemColor) -> Option<&Texture2D> {
@@ -168,10 +168,13 @@ async fn main() {
     let mut time_left = 90.0_f32;
     let mut level_started = false;
     let mut stars = 0_u8;
+    let mut burst_timer = 0.0_f32;
+    let mut burst_center = vec2(0.0, 0.0);
 
     loop {
         let w = screen_width();
         let h = screen_height();
+        burst_timer = (burst_timer - get_frame_time()).max(0.0);
         draw_background(&assets, game_state);
 
         let refill = player.apply_refill(now_ms());
@@ -336,6 +339,28 @@ async fn main() {
             }
         }
 
+        // Procedural match burst: sparkling rings and colorful shards around the last successful tap.
+        if burst_timer > 0.0 {
+            let t = 1.0 - burst_timer / 0.62;
+            let radius = 18.0 + t * (cell * 2.2);
+            let alpha = (1.0 - t).clamp(0.0, 1.0);
+            for i in 0..12 {
+                let a = i as f32 * std::f32::consts::TAU / 12.0 + t * 1.8;
+                let px = burst_center.x + a.cos() * radius;
+                let py = burst_center.y + a.sin() * radius;
+                let color = match i % 5 {
+                    0 => Color::new(1.0, 0.20, 0.42, alpha),
+                    1 => Color::new(0.0, 0.88, 1.0, alpha),
+                    2 => Color::new(0.20, 1.0, 0.48, alpha),
+                    3 => Color::new(0.78, 0.25, 1.0, alpha),
+                    _ => Color::new(1.0, 0.82, 0.08, alpha),
+                };
+                draw_circle(px, py, (cell * 0.045).max(1.5) * (1.0 - t * 0.45), color);
+                draw_line(burst_center.x, burst_center.y, px, py, 1.0, Color::new(color.r, color.g, color.b, alpha * 0.35));
+            }
+            draw_circle_lines(burst_center.x, burst_center.y, radius * 0.65, 2.0, Color::new(0.45, 0.95, 1.0, alpha * 0.65));
+        }
+
         if level.is_complete() {
             draw_rectangle(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, Color::new(0.03, 0.07, 0.16, 0.96));
             draw_rectangle_lines(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, 2.0, Color::new(1.0, 0.82, 0.0, 1.0));
@@ -383,6 +408,8 @@ async fn main() {
                     }
                     Ok(count) => {
                         moves_left = moves_left.saturating_sub(1);
+                        burst_center = vec2(mx, my);
+                        burst_timer = 0.62;
                         let bonus = if timed_mode && count >= 5 { 5.0 } else if timed_mode && count >= 4 { 3.0 } else { 0.0 };
                         time_left = (time_left + bonus).min(120.0);
                         stars = if level.score() >= TARGET_SCORE { if time_left >= 45.0 { 3 } else if time_left >= 20.0 { 2 } else { 1 } } else { 0 };
