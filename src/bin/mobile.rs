@@ -19,9 +19,9 @@ fn load_player(now_ms: u64) -> PlayerState {
 
 fn save_player(player: &PlayerState) {
     if let Ok(mut storage) = quad_storage::STORAGE.lock() {
-        storage.set("nexus_sort_lives", player.lives.to_string());
-        storage.set("nexus_sort_last_refill", player.last_refill_at_ms.to_string());
-        storage.set("nexus_sort_pending_ms", player.pending_ms.to_string());
+        storage.set("nexus_sort_lives", &player.lives.to_string());
+        storage.set("nexus_sort_last_refill", &player.last_refill_at_ms.to_string());
+        storage.set("nexus_sort_pending_ms", &player.pending_ms.to_string());
         storage.set("nexus_sort_level_progress", player.level_progress.to_string());
     }
 }
