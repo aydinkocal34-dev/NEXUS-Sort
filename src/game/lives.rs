@@ -92,6 +92,10 @@ impl PlayerState {
 
         let elapsed = now_ms - self.last_refill_at_ms;
         if elapsed > MAX_REASONABLE_OFFLINE_MS {
+            // Reject implausible elapsed time without granting free lives, but
+            // rebase the timestamp so one anomaly cannot lock refills forever.
+            self.last_refill_at_ms = now_ms;
+            self.pending_ms = 0;
             return RefillOutcome {
                 lives_before: before,
                 lives_after: self.lives,
@@ -254,12 +258,17 @@ mod tests {
     }
 
     #[test]
-    fn implausible_forward_jump_is_flagged() {
+    fn implausible_forward_jump_is_flagged_and_rebased() {
         let mut state = PlayerState::new(1);
         state.lives = 2;
-        let out = state.apply_refill(MAX_REASONABLE_OFFLINE_MS + 2);
+        let now = MAX_REASONABLE_OFFLINE_MS + 2;
+        let out = state.apply_refill(now);
         assert_eq!(out.clock_anomaly, ClockAnomaly::TooFarForward);
         assert_eq!(state.lives, 2);
+        assert_eq!(state.last_refill_at_ms, now);
+        let next = state.apply_refill(now + REFILL_INTERVAL_MS);
+        assert_eq!(next.clock_anomaly, ClockAnomaly::None);
+        assert_eq!(state.lives, 3);
     }
 
     #[test]
