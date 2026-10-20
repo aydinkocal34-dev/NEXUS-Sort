@@ -10,8 +10,8 @@ quad-storage = "0.1.3"
 [package.metadata.android]
 package_name = "com.nexus.sort"
 label = "NEXUS Sort"
-android_version = 35
-target_sdk_version = 35
+android_version = 29
+target_sdk_version = 29
 min_sdk_version = 24
 build_targets = ["aarch64-linux-android"]
 
