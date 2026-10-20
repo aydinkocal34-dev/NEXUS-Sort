@@ -38,7 +38,7 @@ fn window_conf() -> Conf {
         window_title: "NEXUS SORT - Kristal Magarasi".to_owned(),
         window_width: 450,
         window_height: 900,
-        high_dpi: true,
+        high_dpi: false,
         sample_count: 1,
         ..Default::default()
     }
@@ -61,6 +61,11 @@ fn draw_gem(cx: f32, cy: f32, radius: f32, color: GemColor) {
     draw_poly(cx, cy, 6, radius * 0.82, 30.0, bright);
     draw_poly(cx - radius * 0.12, cy - radius * 0.12, 3, radius * 0.42, 20.0, shine);
     draw_circle(cx - radius * 0.25, cy - radius * 0.28, radius * 0.09, WHITE);
+}
+
+fn just_pressed() -> bool {
+    is_mouse_button_pressed(MouseButton::Left)
+        || touches().iter().any(|touch| touch.phase == TouchPhase::Started)
 }
 
 fn draw_background() {
@@ -157,7 +162,7 @@ async fn main() {
                 draw_text("Su an satin alma aktif degil", 42.0, h * 0.40 + 127.0, 12.0, Color::new(0.66, 0.73, 0.86, 1.0));
             }
             draw_text(if completed_levels > 0 { "Tamamlandi - sonraki bolum yakinda" } else { "Baslamak icin 1. bolume dokun" }, 24.0, h - 34.0, 12.0, Color::new(0.72, 0.82, 1.0, 1.0));
-            if is_mouse_button_pressed(MouseButton::Left) {
+            if just_pressed() {
                 let (mx, my) = mouse_position();
                 let (x, y) = nodes[0];
                 let hit_radius = (w * 0.085).clamp(34.0, 48.0);
@@ -234,7 +239,7 @@ async fn main() {
             draw_text("NEON KRISTALLER  /  BOLUM 01", 22.0, h - 24.0, 12.0, Color::new(0.38, 0.54, 0.78, 1.0));
         }
 
-        if is_mouse_button_pressed(MouseButton::Left) {
+        if just_pressed() {
             let (mx, my) = mouse_position();
             if level_finished || level.is_complete() {
                 show_map = true;
