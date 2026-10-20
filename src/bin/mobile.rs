@@ -1,4 +1,47 @@
 use macroquad::prelude::*;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum GameState { MainMenu, Map, Playing, LevelComplete }
+
+#[derive(Default)]
+struct GameAssets {
+    menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>,
+    gem_red: Option<Texture2D>, gem_blue: Option<Texture2D>, gem_green: Option<Texture2D>,
+    gem_purple: Option<Texture2D>, gem_yellow: Option<Texture2D>, button: Option<Texture2D>,
+    panel: Option<Texture2D>, level_complete: Option<Texture2D>, hammer: Option<Texture2D>,
+    bomb: Option<Texture2D>, rainbow: Option<Texture2D>, shuffle: Option<Texture2D>,
+}
+impl GameAssets {
+    async fn load() -> Self {
+        async fn optional(path: &str) -> Option<Texture2D> {
+            match load_texture(path).await { Ok(t) => { t.set_filter(FilterMode::Linear); Some(t) }, Err(_) => None }
+        }
+        Self {
+            menu_bg: optional("assets/menu_bg.png").await, map_bg: optional("assets/map_bg.png").await,
+            board_bg: optional("assets/board_bg.png").await, gem_red: optional("assets/gem_red.png").await,
+            gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
+            gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,
+            button: optional("assets/button_green.png").await, panel: optional("assets/panel_blue.png").await,
+            level_complete: optional("assets/level_complete.png").await, hammer: optional("assets/power_hammer.png").await,
+            bomb: optional("assets/power_bomb.png").await, rainbow: optional("assets/power_rainbow.png").await,
+            shuffle: optional("assets/power_shuffle.png").await,
+        }
+    }
+    fn gem(&self, c: GemColor) -> Option<&Texture2D> {
+        match c { GemColor::Red=>self.gem_red.as_ref(), GemColor::Blue=>self.gem_blue.as_ref(),
+        GemColor::Green=>self.gem_green.as_ref(), GemColor::Purple=>self.gem_purple.as_ref(),
+        GemColor::Yellow=>self.gem_yellow.as_ref() }
+    }
+}
+fn draw_cover(t: &Texture2D, w: f32, h: f32) {
+    let scale=(w/t.width().max(1.0)).max(h/t.height().max(1.0));
+    let size=vec2(t.width()*scale,t.height()*scale);
+    draw_texture_ex(t,(w-size.x)*0.5,(h-size.y)*0.5,WHITE,DrawTextureParams{dest_size:Some(size),..Default::default()});
+}
+fn draw_panel_texture(t: Option<&Texture2D>, x:f32,y:f32,w:f32,h:f32,fallback:Color) {
+    if let Some(t)=t { draw_texture_ex(t,x,y,WHITE,DrawTextureParams{dest_size:Some(vec2(w,h)),..Default::default()}); }
+    else { draw_rectangle(x,y,w,h,fallback); }
+}
 use nexus_sort::game::board::Color as GemColor;
 use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
 use nexus_sort::game::lives::{ClockAnomaly, LevelOutcome, PlayerState};
@@ -79,8 +122,10 @@ fn pointer_position() -> Vec2 {
         .unwrap_or_else(|| { let (x, y) = mouse_position(); vec2(x, y) })
 }
 
-fn draw_background() {
+fn draw_background(assets: &GameAssets, state: GameState) {
     clear_background(Color::new(0.025, 0.035, 0.105, 1.0));
+    let bg = match state { GameState::MainMenu => assets.menu_bg.as_ref(), GameState::Map => assets.map_bg.as_ref(), GameState::Playing | GameState::LevelComplete => assets.board_bg.as_ref() };
+    if let Some(t) = bg { draw_cover(t, screen_width(), screen_height()); return; }
     draw_circle(screen_width() * 0.12, screen_height() * 0.20, 190.0, Color::new(0.0, 0.65, 1.0, 0.055));
     draw_circle(screen_width() * 0.90, screen_height() * 0.48, 220.0, Color::new(0.65, 0.05, 1.0, 0.045));
     draw_circle(screen_width() * 0.50, screen_height() * 0.92, 190.0, Color::new(0.0, 1.0, 0.55, 0.035));
@@ -93,11 +138,13 @@ fn draw_background() {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    let assets = GameAssets::load().await;
+    let mut game_state = GameState::MainMenu;
     let mut level = match CrystalCavernLevel::new() {
         Ok(level) => level,
         Err(error) => {
             loop {
-                draw_background();
+                draw_background(&assets, game_state);
                 draw_text("NEXUS SORT", 24.0, 70.0, 36.0, WHITE);
                 draw_text(&format!("Level error: {error}"), 24.0, 120.0, 20.0, RED);
                 next_frame().await;
@@ -112,7 +159,7 @@ async fn main() {
     }
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
     let mut message_timer = 4.0_f32;
-    let mut show_map = true;
+    let mut game_state = GameState::Map;
     let mut completed_levels = player.level_progress;
     let mut level_finished = false;
     let mut moves_left = 25_u32;
@@ -133,7 +180,20 @@ async fn main() {
         }
         completed_levels = player.level_progress;
 
-        if show_map {
+        if game_state == GameState::MainMenu {
+            let w=screen_width(); let h=screen_height();
+            draw_text("NEXUS SORT",w*0.5-105.0,h*0.25,38.0,Color::new(0.0,0.88,1.0,1.0));
+            draw_text("KRISTAL MAGARASI",w*0.5-98.0,h*0.25+34.0,17.0,WHITE);
+            let bw=(w*0.72).min(330.0); let bh=62.0; let bx=(w-bw)*0.5; let py=h*0.53; let my=py+bh+20.0;
+            draw_panel_texture(assets.button.as_ref(),bx,py,bw,bh,Color::new(0.02,0.48,0.30,0.98));
+            draw_text("OYNA",bx+bw*0.5-33.0,py+39.0,27.0,WHITE);
+            draw_panel_texture(assets.button.as_ref(),bx,my,bw,bh,Color::new(0.04,0.22,0.45,0.98));
+            draw_text("MACERA HARITASI",bx+bw*0.5-94.0,my+38.0,21.0,WHITE);
+            if just_pressed(){let p=pointer_position();if p.x>=bx&&p.x<=bx+bw&&p.y>=py&&p.y<=py+bh{game_state=GameState::Playing;}else if p.x>=bx&&p.x<=bx+bw&&p.y>=my&&p.y<=my+bh{game_state=GameState::Map;}}
+            next_frame().await; continue;
+        }
+
+        if game_state == GameState::Map {
             draw_text("NEXUS", 24.0, 52.0, 30.0, Color::new(0.0, 0.88, 1.0, 1.0));
             draw_text("MACERA HARITASI", 24.0, 84.0, 19.0, WHITE);
             draw_text("Kristallerin yolculugu basliyor", 24.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
@@ -185,7 +245,7 @@ async fn main() {
                 if (mx - x).powi(2) + (my - y).powi(2) <= hit_radius.powi(2) && player.lives > 0 {
                     if let Ok(new_level) = CrystalCavernLevel::new() {
                         level = new_level;
-                        show_map = false;
+                        game_state = GameState::Playing;
                         level_finished = false;
                         outcome_applied = false;
                         moves_left = 25;
@@ -271,7 +331,7 @@ async fn main() {
                 let y = board_y + row as f32 * cell;
                 draw_rectangle(x + 1.5, y + 1.5, cell - 3.0, cell - 3.0, Color::new(0.10, 0.15, 0.30, 0.94));
                 if let Ok(Some(color)) = level.board().cell(row, col) {
-                    draw_gem(x + cell * 0.5, y + cell * 0.5, cell * 0.31, color);
+                    if let Some(t)=assets.gem(color) { let side=cell*0.84; draw_texture_ex(t,x+(cell-side)*0.5,y+(cell-side)*0.5,WHITE,DrawTextureParams{dest_size:Some(vec2(side,side)),..Default::default()}); } else { draw_gem(x+cell*0.5,y+cell*0.5,cell*0.31,color); }
                 }
             }
         }
