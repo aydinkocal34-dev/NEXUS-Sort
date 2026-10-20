@@ -371,7 +371,7 @@ async fn main() {
             let pointer = pointer_position();
                 let (mx, my) = (pointer.x, pointer.y);
             if level_finished || level.is_complete() {
-                show_map = true;
+                game_state = GameState::Map;
             } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
                 level_started = true;
                 let col = ((mx - board_x) / cell) as usize;
