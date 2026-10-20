@@ -4,26 +4,33 @@ use nexus_sort::game::crystal_cavern::{CrystalCavernLevel, TARGET_SCORE};
 use nexus_sort::game::lives::{ClockAnomaly, LevelOutcome, PlayerState};
 
 fn load_player(now_ms: u64) -> PlayerState {
-    let loaded = quad_storage::STORAGE.lock().ok().map(|storage| {
-        PlayerState {
-            lives: storage.get("nexus_sort_lives").and_then(|v| v.parse::<u8>().ok()).unwrap_or(5),
-            last_refill_at_ms: storage.get("nexus_sort_last_refill").and_then(|v| v.parse::<u64>().ok()).unwrap_or(now_ms),
-            pending_ms: storage.get("nexus_sort_pending_ms").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0),
-            level_progress: storage.get("nexus_sort_level_progress").and_then(|v| v.parse::<u32>().ok()).unwrap_or(0),
-        }
-    });
+    // Storage is optional: a storage panic must not prevent the game from opening.
+    let loaded = std::panic::catch_unwind(|| {
+        quad_storage::STORAGE.lock().ok().map(|storage| {
+            PlayerState {
+                lives: storage.get("nexus_sort_lives").and_then(|v| v.parse::<u8>().ok()).unwrap_or(5),
+                last_refill_at_ms: storage.get("nexus_sort_last_refill").and_then(|v| v.parse::<u64>().ok()).unwrap_or(now_ms),
+                pending_ms: storage.get("nexus_sort_pending_ms").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0),
+                level_progress: storage.get("nexus_sort_level_progress").and_then(|v| v.parse::<u32>().ok()).unwrap_or(0),
+            }
+        })
+    }).ok().flatten();
     let mut player = loaded.unwrap_or_else(|| PlayerState::new(now_ms));
     player.clamp_lives();
     player
 }
 
 fn save_player(player: &PlayerState) {
-    if let Ok(mut storage) = quad_storage::STORAGE.lock() {
-        storage.set("nexus_sort_lives", &player.lives.to_string());
-        storage.set("nexus_sort_last_refill", &player.last_refill_at_ms.to_string());
-        storage.set("nexus_sort_pending_ms", &player.pending_ms.to_string());
-        storage.set("nexus_sort_level_progress", &player.level_progress.to_string());
-    }
+    // quad-storage 0.1.3 may panic while writing its local.data file on Android.
+    // Keep optional persistence from crashing the game at startup or after a move.
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        if let Ok(mut storage) = quad_storage::STORAGE.lock() {
+            storage.set("nexus_sort_lives", &player.lives.to_string());
+            storage.set("nexus_sort_last_refill", &player.last_refill_at_ms.to_string());
+            storage.set("nexus_sort_pending_ms", &player.pending_ms.to_string());
+            storage.set("nexus_sort_level_progress", &player.level_progress.to_string());
+        }
+    }));
 }
 
 fn window_conf() -> Conf {
