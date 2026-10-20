@@ -31,6 +31,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Diagnose Android build image
+        run: |
+          docker run --rm notfl3/cargo-apk sh -lc '
+            echo "=== Android SDK environment ==="
+            env | sort | grep -E "ANDROID|JAVA|SDK" || true
+            echo "=== SDK platform directories ==="
+            for d in /opt/android-sdk-linux/platforms /opt/android-sdk/platforms /root/.android-sdk/platforms; do
+              if [ -d "$d" ]; then
+                echo "--- $d"
+                ls -la "$d"
+              else
+                echo "MISSING: $d"
+              fi
+            done
+            echo "=== SDK manager availability ==="
+            command -v sdkmanager || true
+            find /opt /usr/local /root -type f -name sdkmanager 2>/dev/null | head -20 || true
+            echo "=== Android build tools ==="
+            for d in /opt/android-sdk-linux/build-tools /opt/android-sdk/build-tools; do
+              if [ -d "$d" ]; then ls -la "$d"; fi
+            done
+            echo "=== Rust and cargo-apk ==="
+            rustc --version
+            cargo --version
+            cargo quad-apk --help || true
+          '
       - name: Build Android APK with cargo-quad-apk
         run: |
           docker run --rm \
