@@ -106,6 +106,10 @@ async fn main() {
     let mut level_finished = false;
     let mut moves_left = 25_u32;
     let mut outcome_applied = false;
+    let mut timed_mode = true;
+    let mut time_left = 90.0_f32;
+    let mut level_started = false;
+    let mut stars = 0_u8;
 
     loop {
         let w = screen_width();
@@ -173,6 +177,9 @@ async fn main() {
                         level_finished = false;
                         outcome_applied = false;
                         moves_left = 25;
+                        time_left = 90.0;
+                        level_started = false;
+                        stars = 0;
                         message = String::from("1. Bolum: Kristal Magarasi");
                         message_timer = 3.0;
                     }
@@ -198,6 +205,22 @@ async fn main() {
         draw_rectangle(30.0, 174.0, (w - 60.0) * progress, 10.0, Color::new(0.0, 0.88, 1.0, 1.0));
         draw_text(&format!("HAMLE: {}  KALAN: {}", level.moves(), moves_left), 30.0, 194.0, 13.0, Color::new(0.72, 0.82, 1.0, 1.0));
         draw_text(&format!("CAN: {}/5", player.lives), w - 110.0, 194.0, 13.0, Color::new(1.0, 0.38, 0.52, 1.0));
+        if timed_mode && !level_finished && !level.is_complete() && level_started {
+            time_left = (time_left - get_frame_time()).max(0.0);
+            let timer_color = if time_left <= 15.0 { RED } else { Color::new(1.0, 0.72, 0.18, 1.0) };
+            draw_text(&format!("SURE: {:02}:{:02}", time_left as u32 / 60, time_left as u32 % 60), w * 0.5 - 48.0, 194.0, 14.0, timer_color);
+            if time_left <= 0.0 {
+                level_finished = true;
+                if !outcome_applied {
+                    player.apply_level_outcome(LevelOutcome::Failure, now_ms());
+                    outcome_applied = true;
+                    save_player(&player);
+                    message = String::from("Sure bitti! Bir daha dene.");
+                }
+            }
+        } else if timed_mode {
+            draw_text("SURE: 01:30", w * 0.5 - 48.0, 194.0, 14.0, Color::new(1.0, 0.72, 0.18, 1.0));
+        }
 
         let available_board_h = (h - 300.0).max(240.0);
         let cell = (((w - 28.0) / 8.0).min(available_board_h / 8.0)).max(1.0);
@@ -223,7 +246,8 @@ async fn main() {
             draw_rectangle_lines(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, 2.0, Color::new(1.0, 0.82, 0.0, 1.0));
             draw_text("KRISTAL MAGARASI", 34.0, board_y + board_size * 0.36 + 36.0, 20.0, Color::new(1.0, 0.85, 0.15, 1.0));
             draw_text("AYDINLANDI!", 34.0, board_y + board_size * 0.36 + 66.0, 26.0, WHITE);
-            draw_text("Haritaya donmek icin dokun", 34.0, board_y + board_size * 0.36 + 92.0, 15.0, Color::new(0.55, 0.92, 1.0, 1.0));
+            draw_text(&format!("YILDIZ: {} / 3", stars.max(1)), 34.0, board_y + board_size * 0.36 + 88.0, 15.0, Color::new(1.0, 0.84, 0.16, 1.0));
+            draw_text("Haritaya donmek icin dokun", 34.0, board_y + board_size * 0.36 + 108.0, 13.0, Color::new(0.55, 0.92, 1.0, 1.0));
         } else if level_finished {
             draw_rectangle(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, Color::new(0.03, 0.04, 0.12, 0.97));
             draw_rectangle_lines(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, 2.0, Color::new(1.0, 0.22, 0.42, 1.0));
@@ -244,6 +268,7 @@ async fn main() {
             if level_finished || level.is_complete() {
                 show_map = true;
             } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
+                level_started = true;
                 let col = ((mx - board_x) / cell) as usize;
                 let row = ((my - board_y) / cell) as usize;
                 match level.play_at(row, col) {
@@ -253,7 +278,10 @@ async fn main() {
                     }
                     Ok(count) => {
                         moves_left = moves_left.saturating_sub(1);
-                        message = format!("KRISTAL PATLAMASI! +{} PUAN", count * 10);
+                        let bonus = if timed_mode && count >= 5 { 5.0 } else if timed_mode && count >= 4 { 3.0 } else { 0.0 };
+                        time_left = (time_left + bonus).min(120.0);
+                        stars = if level.score() >= TARGET_SCORE { if time_left >= 45.0 { 3 } else if time_left >= 20.0 { 2 } else { 1 } } else { 0 };
+                        message = if bonus > 0.0 { format!("KRISTAL PATLAMASI! +{} PUAN  +{} sn", count * 10, bonus as u32) } else { format!("KRISTAL PATLAMASI! +{} PUAN", count * 10) };
                         message_timer = 2.4;
                         if level.is_complete() && !outcome_applied {
                             player.apply_level_outcome(LevelOutcome::Success, now_ms());
