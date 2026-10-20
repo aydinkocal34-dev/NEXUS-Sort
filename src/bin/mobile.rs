@@ -172,7 +172,7 @@ async fn main() {
     loop {
         let w = screen_width();
         let h = screen_height();
-        draw_background();
+        draw_background(&assets, game_state);
 
         let refill = player.apply_refill(now_ms());
         if refill.lives_after != refill.lives_before {
