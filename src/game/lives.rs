@@ -131,7 +131,9 @@ impl PlayerState {
     pub fn apply_level_outcome(&mut self, outcome: LevelOutcome, now_ms: u64) {
         match outcome {
             LevelOutcome::Success => {
-                self.level_progress = self.level_progress.saturating_add(1);
+                // Only level 1 is currently playable. Record it as completed
+                // without incrementing progress again when it is replayed.
+                self.level_progress = self.level_progress.max(1);
             }
             LevelOutcome::Failure if self.lives > 0 => {
                 let was_full = self.lives == MAX_LIVES;
@@ -234,6 +236,14 @@ mod tests {
         state.lives = 3;
         state.apply_level_outcome(LevelOutcome::Success, 1);
         assert_eq!(state.lives, 3);
+        assert_eq!(state.level_progress, 1);
+    }
+
+    #[test]
+    fn replaying_completed_level_does_not_advance_progress_again() {
+        let mut state = PlayerState::new(0);
+        state.apply_level_outcome(LevelOutcome::Success, 1);
+        state.apply_level_outcome(LevelOutcome::Success, 2);
         assert_eq!(state.level_progress, 1);
     }
 
