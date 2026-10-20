@@ -24,3 +24,23 @@ jobs:
         run: cargo fmt --all
       - name: Run tests
         run: cargo test --all-targets
+
+  android-apk:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Android APK with cargo-quad-apk
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/root/src" \
+            -w /root/src \
+            notfl3/cargo-apk cargo quad-apk build --release --bin mobile
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-sort-android-apk
+          path: target/android-artifacts/release/apk/*.apk
+          if-no-files-found: error
+          retention-days: 14
