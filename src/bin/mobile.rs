@@ -10,6 +10,8 @@ struct GameAssets {
     gem_purple: Option<Texture2D>, gem_yellow: Option<Texture2D>, button: Option<Texture2D>,
     panel: Option<Texture2D>, level_complete: Option<Texture2D>, hammer: Option<Texture2D>,
     bomb: Option<Texture2D>, rainbow: Option<Texture2D>, shuffle: Option<Texture2D>,
+    match_blast: Option<Texture2D>, bubble: Option<Texture2D>, sparkle: Option<Texture2D>,
+    shatter: Option<Texture2D>, pipo_happy: Option<Texture2D>, pipo_sad: Option<Texture2D>,
 }
 impl GameAssets {
     async fn load() -> Self {
@@ -18,13 +20,19 @@ impl GameAssets {
         }
         Self {
             menu_bg: optional("assets/menu_bg.png").await, map_bg: optional("assets/map_bg.png").await,
-            board_bg: optional("assets/board_bg.png").await, gem_red: optional("assets/gem_red.png").await,
+            board_bg: optional("assets/gameplay_mockup.png").await, gem_red: optional("assets/gem_red.png").await,
             gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
             gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,
-            button: optional("assets/button_green.png").await, panel: optional("assets/panel_blue.png").await,
+            button: optional("assets/btn_play.png").await, panel: optional("assets/panel_blue.png").await,
             level_complete: optional("assets/level_complete.png").await, hammer: optional("assets/booster_hammer.png").await,
             bomb: optional("assets/booster_bomb.png").await, rainbow: optional("assets/booster_rainbow.png").await,
             shuffle: optional("assets/booster_shuffle.png").await,
+            match_blast: optional("assets/effect_blast.png").await,
+            bubble: optional("assets/effect_bubble.png").await,
+            sparkle: optional("assets/effect_sparkle.png").await,
+            shatter: optional("assets/effect_shatter.png").await,
+            pipo_happy: optional("assets/pipo_happy.png").await,
+            pipo_sad: optional("assets/pipo_sad.png").await,
         }
     }
     fn gem(&self, c: GemColor) -> Option<&Texture2D> {
@@ -339,6 +347,26 @@ async fn main() {
             }
         }
 
+        // Optional generated sprite overlays; procedural particles remain the fallback.
+        if burst_timer > 0.0 {
+            let t = 1.0 - burst_timer / 0.62;
+            let effect_side = cell * (1.1 + t * 1.2);
+            if let Some(texture) = assets.match_blast.as_ref().or(assets.shatter.as_ref()) {
+                draw_texture_ex(texture, burst_center.x-effect_side*0.5, burst_center.y-effect_side*0.5,
+                    Color::new(1.0, 1.0, 1.0, (1.0-t).clamp(0.0,1.0)),
+                    DrawTextureParams { dest_size: Some(vec2(effect_side,effect_side)), ..Default::default() });
+            }
+            if let Some(texture) = assets.sparkle.as_ref() {
+                let sparkle_side = cell * 0.65;
+                for i in 0..4 {
+                    let angle = i as f32 * std::f32::consts::FRAC_PI_2 + t;
+                    let x = burst_center.x + angle.cos() * effect_side * 0.45 - sparkle_side*0.5;
+                    let y = burst_center.y + angle.sin() * effect_side * 0.45 - sparkle_side*0.5;
+                    draw_texture_ex(texture,x,y,Color::new(1.0,1.0,1.0,(1.0-t).clamp(0.0,1.0)),
+                        DrawTextureParams { dest_size: Some(vec2(sparkle_side,sparkle_side)), ..Default::default() });
+                }
+            }
+        }
         // Procedural match burst: sparkling rings and colorful shards around the last successful tap.
         if burst_timer > 0.0 {
             let t = 1.0 - burst_timer / 0.62;
