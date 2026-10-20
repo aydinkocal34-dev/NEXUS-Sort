@@ -69,8 +69,8 @@ jobs:
               SDKMANAGER=/opt/android-sdk-linux/tools/bin/sdkmanager
               echo "Installing Android SDK platform and build tools inside the same container..."
               yes | "$SDKMANAGER" --licenses >/dev/null || true
-              "$SDKMANAGER" "platforms;android-29" "build-tools;29.0.3" "platform-tools"
-              test -f /opt/android-sdk-linux/platforms/android-29/android.jar
+              "$SDKMANAGER" "platforms;android-30" "build-tools;30.0.3" "platform-tools"
+              test -f /opt/android-sdk-linux/platforms/android-30/android.jar
               echo "Updating the container Rust toolchain; bundled Rust 1.79 is too old for current dependencies."
               if ! command -v rustup >/dev/null 2>&1; then
                 echo "rustup is unavailable in notfl3/cargo-apk; cannot safely update Rust in this image."
