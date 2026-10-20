@@ -20,7 +20,7 @@ impl GameAssets {
         async fn optional(path: &str) -> Option<Texture2D> {
             match load_texture(path).await { Ok(t) => { t.set_filter(FilterMode::Linear); Some(t) }, Err(_) => None }
         }
-        Self {
+        let assets = Self {
             menu_bg: optional("assets/menu_bg.png").await, map_bg: optional("assets/map_bg.png").await,
             board_bg: optional("assets/gameplay_mockup.png").await, gem_red: optional("assets/gem_red.png").await,
             gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
