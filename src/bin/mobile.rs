@@ -19,6 +19,7 @@ struct GameAssets {
     booster_plus5: Option<Texture2D>, nexus_crystal: Option<Texture2D>, level_failed: Option<Texture2D>,
     gem_rainbow: Option<Texture2D>, gem_bomb: Option<Texture2D>, gem_ice: Option<Texture2D>,
     effect_glow: Option<Texture2D>, effect_beam: Option<Texture2D>, effect_swirl: Option<Texture2D>,
+    effect_match_blue: Option<Texture2D>, effect_match_pink: Option<Texture2D>, effect_line: Option<Texture2D>,
     btn_ok: Option<Texture2D>, btn_close: Option<Texture2D>, dialog_frame: Option<Texture2D>, panel_wide: Option<Texture2D>,
 }
 impl GameAssets {
@@ -59,6 +60,9 @@ impl GameAssets {
             effect_glow: optional("assets/effect_glow.png").await,
             effect_beam: optional("assets/effect_beam.png").await,
             effect_swirl: optional("assets/effect_swirl.png").await,
+            effect_match_blue: optional("assets/effect_match_blue.png").await,
+            effect_match_pink: optional("assets/effect_match_pink.png").await,
+            effect_line: optional("assets/effect_line.png").await,
             btn_ok: optional("assets/btn_ok.png").await,
             btn_close: optional("assets/btn_close.png").await,
             dialog_frame: optional("assets/dialog_frame.png").await,
@@ -450,6 +454,11 @@ async fn main() {
                 let x = board_x + col as f32 * cell;
                 let y = board_y + row as f32 * cell;
                 draw_rectangle(x + 1.5, y + 1.5, cell - 3.0, cell - 3.0, Color::new(0.10, 0.15, 0.30, 0.94));
+                if let Some(line) = assets.effect_line.as_ref() {
+                    if (row + col) % 4 == 0 {
+                        draw_texture_ex(line, x+cell*0.12, y+cell*0.12, Color::new(0.35,0.72,1.0,0.10), DrawTextureParams { dest_size: Some(vec2(cell*0.76,cell*0.76)), ..Default::default() });
+                    }
+                }
                 if let Some(glow) = assets.effect_glow.as_ref() {
                     let side = cell * 0.98;
                     draw_texture_ex(glow, x+(cell-side)*0.5, y+(cell-side)*0.5, Color::new(0.35,0.72,1.0,0.14), DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
@@ -464,7 +473,8 @@ async fn main() {
         if burst_timer > 0.0 {
             let t = 1.0 - burst_timer / 0.62;
             let effect_side = cell * (1.1 + t * 1.2);
-            if let Some(texture) = assets.match_blast.as_ref().or(assets.shatter.as_ref()) {
+            let match_effect = if (level.score() / 10) % 2 == 0 { assets.effect_match_blue.as_ref() } else { assets.effect_match_pink.as_ref() };
+            if let Some(texture) = match_effect.or(assets.match_blast.as_ref()).or(assets.shatter.as_ref()) {
                 draw_texture_ex(texture, burst_center.x-effect_side*0.5, burst_center.y-effect_side*0.5,
                     Color::new(1.0, 1.0, 1.0, (1.0-t).clamp(0.0,1.0)),
                     DrawTextureParams { dest_size: Some(vec2(effect_side,effect_side)), ..Default::default() });
