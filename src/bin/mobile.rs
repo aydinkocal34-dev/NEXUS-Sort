@@ -18,6 +18,8 @@ struct GameAssets {
     btn_level: Option<Texture2D>, chest: Option<Texture2D>, coin: Option<Texture2D>,
     booster_plus5: Option<Texture2D>, nexus_crystal: Option<Texture2D>, level_failed: Option<Texture2D>,
     gem_rainbow: Option<Texture2D>, gem_bomb: Option<Texture2D>, gem_ice: Option<Texture2D>,
+    effect_glow: Option<Texture2D>, effect_beam: Option<Texture2D>, effect_swirl: Option<Texture2D>,
+    btn_ok: Option<Texture2D>, btn_close: Option<Texture2D>, dialog_frame: Option<Texture2D>, panel_wide: Option<Texture2D>,
 }
 impl GameAssets {
     async fn load() -> Self {
@@ -54,6 +56,13 @@ impl GameAssets {
             gem_rainbow: optional("assets/gem_rainbow.png").await,
             gem_bomb: optional("assets/gem_bomb.png").await,
             gem_ice: optional("assets/gem_ice.png").await,
+            effect_glow: optional("assets/effect_glow.png").await,
+            effect_beam: optional("assets/effect_beam.png").await,
+            effect_swirl: optional("assets/effect_swirl.png").await,
+            btn_ok: optional("assets/btn_ok.png").await,
+            btn_close: optional("assets/btn_close.png").await,
+            dialog_frame: optional("assets/dialog_frame.png").await,
+            panel_wide: optional("assets/panel_wide.png").await,
         };
         let mut assets = assets;
         // Keep every supplied PNG path wired into the runtime asset loader. Individual screens
@@ -236,6 +245,10 @@ async fn main() {
             draw_rectangle(w*0.08,h*0.18,w*0.84,78.0,Color::new(0.015,0.025,0.09,0.58));
             draw_text("NEXUS SORT",w*0.5-105.0,h*0.25,38.0,Color::new(0.18,0.91,1.0,1.0));
             draw_text("KRISTAL MAGARASI",w*0.5-98.0,h*0.25+34.0,17.0,WHITE);
+            if let Some(glow) = assets.effect_glow.as_ref() {
+                let side = (w * 0.62).clamp(220.0, 300.0);
+                draw_texture_ex(glow, (w-side)*0.5, h*0.25, Color::new(0.45,0.92,1.0,0.42), DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
             if let Some(crystal) = assets.nexus_crystal.as_ref() {
                 let side = (w * 0.34).clamp(110.0, 156.0);
                 draw_texture_ex(crystal, (w-side)*0.5, h*0.30, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
@@ -253,7 +266,7 @@ async fn main() {
             draw_panel_texture(assets.button.as_ref(),bx,py,bw,bh,Color::new(0.02,0.48,0.30,0.98));
             draw_rectangle_lines(bx,py,bw,bh,2.0,Color::new(0.40,1.0,0.88,0.85));
             draw_text("OYNA",bx+bw*0.5-33.0,py+39.0,27.0,WHITE);
-            draw_panel_texture(assets.button.as_ref(),bx,my,bw,bh,Color::new(0.04,0.22,0.45,0.98));
+            draw_panel_texture(assets.btn_level.as_ref().or(assets.button.as_ref()),bx,my,bw,bh,Color::new(0.04,0.22,0.45,0.98));
             draw_rectangle_lines(bx,my,bw,bh,1.5,Color::new(0.25,0.72,1.0,0.85));
             draw_text("MACERA HARITASI",bx+bw*0.5-94.0,my+38.0,21.0,WHITE);
             if just_pressed(){let p=pointer_position();if p.x>=bx&&p.x<=bx+bw&&p.y>=py&&p.y<=py+bh{game_state=GameState::Playing;}else if p.x>=bx&&p.x<=bx+bw&&p.y>=my&&p.y<=my+bh{game_state=GameState::Map;}}
@@ -354,7 +367,7 @@ async fn main() {
         if game_state == GameState::LevelComplete {
             let w = screen_width(); let h = screen_height();
             let pw = (w * 0.86).min(420.0); let ph = 300.0; let px = (w-pw)*0.5; let py = (h-ph)*0.5;
-            draw_panel_texture(assets.level_complete.as_ref().or(assets.panel.as_ref()), px, py, pw, ph, Color::new(0.025, 0.055, 0.16, 0.98));
+            draw_panel_texture(assets.level_complete.as_ref().or(assets.panel_wide.as_ref()).or(assets.panel.as_ref()), px, py, pw, ph, Color::new(0.025, 0.055, 0.16, 0.98));
             draw_rectangle_lines(px, py, pw, ph, 2.0, Color::new(1.0, 0.80, 0.12, 1.0));
             if let Some(pipo) = assets.pipo_happy.as_ref() {
                 let side = 76.0;
@@ -367,7 +380,7 @@ async fn main() {
             draw_text(&format!("Skor: {}", level.score()), px+24.0, py+94.0, 22.0, WHITE);
             draw_text(&format!("Yildizlar: {} / 3", stars.max(1)), px+24.0, py+132.0, 20.0, Color::new(1.0, 0.86, 0.20, 1.0));
             let bw = pw-48.0; let by = py+ph-88.0;
-            draw_panel_texture(assets.button.as_ref(), px+24.0, by, bw, 58.0, Color::new(0.02, 0.46, 0.30, 1.0));
+            draw_panel_texture(assets.btn_ok.as_ref().or(assets.button.as_ref()), px+24.0, by, bw, 58.0, Color::new(0.02, 0.46, 0.30, 1.0));
             draw_text("HARITAYA DON", px+pw*0.5-76.0, by+37.0, 22.0, WHITE);
             draw_text("Sonraki bolum yeni icerik olarak eklenecek", px+24.0, py+ph-12.0, 11.0, Color::new(0.72, 0.82, 1.0, 1.0));
             if just_pressed() { let p = pointer_position(); if p.x >= px+24.0 && p.x <= px+24.0+bw && p.y >= by && p.y <= by+58.0 { game_state = GameState::Map; } }
