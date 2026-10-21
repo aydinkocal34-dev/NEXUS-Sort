@@ -25,7 +25,7 @@ impl GameAssets {
             match load_texture(path).await { Ok(t) => { t.set_filter(FilterMode::Linear); Some(t) }, Err(_) => None }
         }
         let assets = Self {
-            menu_bg: optional("assets/main_menu_mockup.png").await.or(optional("assets/menu_bg.png").await),
+            menu_bg: optional("assets/menu_bg.png").await.or(optional("assets/main_menu_mockup.png").await),
             map_bg: optional("assets/map_bg.png").await,
             board_bg: optional("assets/cavern_background.png").await,
             cavern_bg: optional("assets/cavern_background.png").await, gem_red: optional("assets/gem_red.png").await,
@@ -232,7 +232,9 @@ async fn main() {
 
         if game_state == GameState::MainMenu {
             let w=screen_width(); let h=screen_height();
-            draw_text("NEXUS SORT",w*0.5-105.0,h*0.25,38.0,Color::new(0.0,0.88,1.0,1.0));
+            // Keep the title readable over the background art with a subtle translucent backing.
+            draw_rectangle(w*0.08,h*0.18,w*0.84,78.0,Color::new(0.015,0.025,0.09,0.58));
+            draw_text("NEXUS SORT",w*0.5-105.0,h*0.25,38.0,Color::new(0.18,0.91,1.0,1.0));
             draw_text("KRISTAL MAGARASI",w*0.5-98.0,h*0.25+34.0,17.0,WHITE);
             if let Some(crystal) = assets.nexus_crystal.as_ref() {
                 let side = (w * 0.34).clamp(110.0, 156.0);
@@ -246,10 +248,13 @@ async fn main() {
                 let side = (w * 0.19).clamp(72.0, 92.0);
                 draw_texture_ex(pipo, w-side-18.0, h*0.43, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
             }
-            let bw=(w*0.72).min(330.0); let bh=62.0; let bx=(w-bw)*0.5; let py=h*0.53; let my=py+bh+20.0;
+            let bw=(w*0.72).min(330.0); let bh=62.0; let bx=(w-bw)*0.5; let py=h*0.57; let my=py+bh+20.0;
+            draw_rectangle(bx-5.0,py-5.0,bw+10.0,bh+10.0,Color::new(0.0,0.82,1.0,0.14));
             draw_panel_texture(assets.button.as_ref(),bx,py,bw,bh,Color::new(0.02,0.48,0.30,0.98));
+            draw_rectangle_lines(bx,py,bw,bh,2.0,Color::new(0.40,1.0,0.88,0.85));
             draw_text("OYNA",bx+bw*0.5-33.0,py+39.0,27.0,WHITE);
             draw_panel_texture(assets.button.as_ref(),bx,my,bw,bh,Color::new(0.04,0.22,0.45,0.98));
+            draw_rectangle_lines(bx,my,bw,bh,1.5,Color::new(0.25,0.72,1.0,0.85));
             draw_text("MACERA HARITASI",bx+bw*0.5-94.0,my+38.0,21.0,WHITE);
             if just_pressed(){let p=pointer_position();if p.x>=bx&&p.x<=bx+bw&&p.y>=py&&p.y<=py+bh{game_state=GameState::Playing;}else if p.x>=bx&&p.x<=bx+bw&&p.y>=my&&p.y<=my+bh{game_state=GameState::Map;}}
             next_frame().await; continue;
