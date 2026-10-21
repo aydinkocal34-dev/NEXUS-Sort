@@ -369,6 +369,10 @@ async fn main() {
             let pw = (w * 0.86).min(420.0); let ph = 300.0; let px = (w-pw)*0.5; let py = (h-ph)*0.5;
             draw_panel_texture(assets.level_complete.as_ref().or(assets.panel_wide.as_ref()).or(assets.panel.as_ref()), px, py, pw, ph, Color::new(0.025, 0.055, 0.16, 0.98));
             draw_rectangle_lines(px, py, pw, ph, 2.0, Color::new(1.0, 0.80, 0.12, 1.0));
+            if let Some(swirl) = assets.effect_swirl.as_ref() {
+                let side = (pw*0.78).min(260.0);
+                draw_texture_ex(swirl, px+(pw-side)*0.5, py+42.0, Color::new(0.45,0.90,1.0,0.28), DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
             if let Some(pipo) = assets.pipo_happy.as_ref() {
                 let side = 76.0;
                 draw_texture_ex(pipo, px+pw-side-16.0, py+12.0, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
@@ -387,12 +391,18 @@ async fn main() {
             next_frame().await; continue;
         }
 
+        if let Some(home) = assets.btn_home.as_ref() {
+            draw_texture_ex(home, w-94.0, 28.0, WHITE, DrawTextureParams { dest_size: Some(vec2(30.0,30.0)), ..Default::default() });
+        }
+        if let Some(settings) = assets.btn_settings.as_ref() {
+            draw_texture_ex(settings, w-52.0, 28.0, WHITE, DrawTextureParams { dest_size: Some(vec2(30.0,30.0)), ..Default::default() });
+        }
         draw_text("NEXUS", 22.0, 48.0, 24.0, Color::new(0.0, 0.88, 1.0, 1.0));
         draw_text("SORT", 112.0, 48.0, 24.0, Color::new(0.78, 0.28, 1.0, 1.0));
         draw_text("KRISTAL MAGARASI", 22.0, 78.0, 17.0, Color::new(0.82, 0.88, 1.0, 1.0));
 
         let card_y = 100.0;
-        draw_rectangle(16.0, card_y, w - 32.0, 102.0, Color::new(0.06, 0.09, 0.22, 0.88));
+        draw_panel_texture(assets.panel_wide.as_ref().or(assets.panel.as_ref()), 16.0, card_y, w - 32.0, 102.0, Color::new(0.06, 0.09, 0.22, 0.88));
         draw_rectangle_lines(16.0, card_y, w - 32.0, 102.0, 1.4, Color::new(0.0, 0.78, 1.0, 0.55));
         draw_text("SKOR", 30.0, 126.0, 14.0, Color::new(0.60, 0.72, 0.92, 1.0));
         draw_text(&format!("{}", level.score()), 30.0, 159.0, 31.0, WHITE);
@@ -440,6 +450,10 @@ async fn main() {
                 let x = board_x + col as f32 * cell;
                 let y = board_y + row as f32 * cell;
                 draw_rectangle(x + 1.5, y + 1.5, cell - 3.0, cell - 3.0, Color::new(0.10, 0.15, 0.30, 0.94));
+                if let Some(glow) = assets.effect_glow.as_ref() {
+                    let side = cell * 0.98;
+                    draw_texture_ex(glow, x+(cell-side)*0.5, y+(cell-side)*0.5, Color::new(0.35,0.72,1.0,0.14), DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+                }
                 if let Ok(Some(color)) = level.board().cell(row, col) {
                     if let Some(t)=assets.gem(color) { let side=cell*0.84; draw_texture_ex(t,x+(cell-side)*0.5,y+(cell-side)*0.5,WHITE,DrawTextureParams{dest_size:Some(vec2(side,side)),..Default::default()}); } else { draw_gem(x+cell*0.5,y+cell*0.5,cell*0.31,color); }
                 }
