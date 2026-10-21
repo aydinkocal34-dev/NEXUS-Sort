@@ -5,7 +5,7 @@ enum GameState { MainMenu, Map, Playing, LevelComplete }
 
 #[derive(Default)]
 struct GameAssets {
-    menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>,
+    menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>, cavern_bg: Option<Texture2D>,
     gem_red: Option<Texture2D>, gem_blue: Option<Texture2D>, gem_green: Option<Texture2D>,
     gem_purple: Option<Texture2D>, gem_yellow: Option<Texture2D>, button: Option<Texture2D>,
     panel: Option<Texture2D>, level_complete: Option<Texture2D>, hammer: Option<Texture2D>,
@@ -21,8 +21,10 @@ impl GameAssets {
             match load_texture(path).await { Ok(t) => { t.set_filter(FilterMode::Linear); Some(t) }, Err(_) => None }
         }
         let assets = Self {
-            menu_bg: optional("assets/menu_bg.png").await, map_bg: optional("assets/map_bg.png").await,
-            board_bg: optional("assets/gameplay_mockup.png").await, gem_red: optional("assets/gem_red.png").await,
+            menu_bg: optional("assets/main_menu_mockup.png").await.or(optional("assets/menu_bg.png").await),
+            map_bg: optional("assets/map_bg.png").await,
+            board_bg: optional("assets/cavern_background.png").await,
+            cavern_bg: optional("assets/cavern_background.png").await, gem_red: optional("assets/gem_red.png").await,
             gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
             gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,
             button: optional("assets/btn_play.png").await, panel: optional("assets/panel_blue.png").await,
@@ -153,8 +155,8 @@ fn pointer_position() -> Vec2 {
 
 fn draw_background(assets: &GameAssets, state: GameState) {
     clear_background(Color::new(0.025, 0.035, 0.105, 1.0));
-    let bg = match state { GameState::MainMenu => assets.menu_bg.as_ref(), GameState::Map => assets.map_bg.as_ref(), GameState::Playing | GameState::LevelComplete => assets.board_bg.as_ref() };
-    if let Some(t) = bg { draw_cover(t, screen_width(), screen_height()); return; }
+    let bg = match state { GameState::MainMenu => assets.menu_bg.as_ref(), GameState::Map => assets.map_bg.as_ref(), GameState::Playing | GameState::LevelComplete => assets.cavern_bg.as_ref().or(assets.board_bg.as_ref()) };
+    if let Some(t) = bg { draw_cover(t, screen_width(), screen_height()); }
     draw_circle(screen_width() * 0.12, screen_height() * 0.20, 190.0, Color::new(0.0, 0.65, 1.0, 0.055));
     draw_circle(screen_width() * 0.90, screen_height() * 0.48, 220.0, Color::new(0.65, 0.05, 1.0, 0.045));
     draw_circle(screen_width() * 0.50, screen_height() * 0.92, 190.0, Color::new(0.0, 1.0, 0.55, 0.035));
