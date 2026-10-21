@@ -5,9 +5,9 @@ enum GameState { MainMenu, Map, Playing, LevelComplete }
 
 #[derive(Default)]
 struct GameAssets {
-    menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>, cavern_bg: Option<Texture2D>,
+    menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>, cavern_bg: Option<Texture2D>, gameplay_mockup: Option<Texture2D>,
     gem_red: Option<Texture2D>, gem_blue: Option<Texture2D>, gem_green: Option<Texture2D>,
-    gem_purple: Option<Texture2D>, gem_yellow: Option<Texture2D>, button: Option<Texture2D>,
+    gem_purple: Option<Texture2D>, gem_yellow: Option<Texture2D>, gem_pink: Option<Texture2D>, gem_vstripe: Option<Texture2D>, button: Option<Texture2D>,
     panel: Option<Texture2D>, level_complete: Option<Texture2D>, hammer: Option<Texture2D>,
     bomb: Option<Texture2D>, rainbow: Option<Texture2D>, shuffle: Option<Texture2D>,
     match_blast: Option<Texture2D>, bubble: Option<Texture2D>, sparkle: Option<Texture2D>,
@@ -31,9 +31,9 @@ impl GameAssets {
             menu_bg: optional("assets/menu_bg.png").await.or(optional("assets/main_menu_mockup.png").await),
             map_bg: optional("assets/map_bg.png").await,
             board_bg: optional("assets/cavern_background.png").await,
-            cavern_bg: optional("assets/cavern_background.png").await, gem_red: optional("assets/gem_red.png").await,
+            cavern_bg: optional("assets/cavern_background.png").await, gameplay_mockup: optional("assets/gameplay_mockup.png").await, gem_red: optional("assets/gem_red.png").await,
             gem_blue: optional("assets/gem_blue.png").await, gem_green: optional("assets/gem_green.png").await,
-            gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,
+            gem_purple: optional("assets/gem_purple.png").await, gem_yellow: optional("assets/gem_yellow.png").await,\n            gem_pink: optional("assets/gem_pink.png").await, gem_vstripe: optional("assets/gem_vstripe.png").await,
             button: optional("assets/btn_play.png").await, panel: optional("assets/panel_blue.png").await,
             level_complete: optional("assets/level_complete.png").await, hammer: optional("assets/booster_hammer.png").await,
             bomb: optional("assets/booster_bomb.png").await, rainbow: optional("assets/booster_rainbow.png").await,
@@ -184,7 +184,7 @@ fn pointer_position() -> Vec2 {
 
 fn draw_background(assets: &GameAssets, state: GameState) {
     clear_background(Color::new(0.025, 0.035, 0.105, 1.0));
-    let bg = match state { GameState::MainMenu => assets.menu_bg.as_ref(), GameState::Map => assets.map_bg.as_ref(), GameState::Playing | GameState::LevelComplete => assets.cavern_bg.as_ref().or(assets.board_bg.as_ref()) };
+    let bg = match state { GameState::MainMenu => assets.menu_bg.as_ref(), GameState::Map => assets.map_bg.as_ref(), GameState::Playing | GameState::LevelComplete => assets.cavern_bg.as_ref().or(assets.board_bg.as_ref()).or(assets.gameplay_mockup.as_ref()) };
     if let Some(t) = bg { draw_cover(t, screen_width(), screen_height()); }
     draw_circle(screen_width() * 0.12, screen_height() * 0.20, 190.0, Color::new(0.0, 0.65, 1.0, 0.055));
     draw_circle(screen_width() * 0.90, screen_height() * 0.48, 220.0, Color::new(0.65, 0.05, 1.0, 0.045));
@@ -554,7 +554,7 @@ async fn main() {
             // Special crystal PNGs are shown as a small preview row only; the match rules
             // remain limited to the five implemented base colors until special mechanics exist.
             let special_side = (cell * 0.46).clamp(16.0, 24.0);
-            for (i, texture) in [assets.gem_rainbow.as_ref(), assets.gem_bomb.as_ref(), assets.gem_ice.as_ref()].iter().enumerate() {
+            for (i, texture) in [assets.gem_rainbow.as_ref(), assets.gem_bomb.as_ref(), assets.gem_ice.as_ref(), assets.gem_pink.as_ref(), assets.gem_vstripe.as_ref()].iter().enumerate() {
                 if let Some(texture) = texture {
                     let x = w - (i as f32 + 1.0) * (special_side + 5.0) - 5.0;
                     draw_texture_ex(texture, x, board_y - special_side - 12.0, WHITE, DrawTextureParams { dest_size: Some(vec2(special_side,special_side)), ..Default::default() });
