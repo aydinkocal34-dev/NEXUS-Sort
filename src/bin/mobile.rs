@@ -16,6 +16,8 @@ struct GameAssets {
     extras: Vec<Texture2D>,
     pipo_idle: Option<Texture2D>, btn_home: Option<Texture2D>, btn_settings: Option<Texture2D>,
     btn_level: Option<Texture2D>, chest: Option<Texture2D>, coin: Option<Texture2D>,
+    booster_plus5: Option<Texture2D>, nexus_crystal: Option<Texture2D>, level_failed: Option<Texture2D>,
+    gem_rainbow: Option<Texture2D>, gem_bomb: Option<Texture2D>, gem_ice: Option<Texture2D>,
 }
 impl GameAssets {
     async fn load() -> Self {
@@ -46,6 +48,12 @@ impl GameAssets {
             btn_level: optional("assets/btn_level.png").await,
             chest: optional("assets/chest.png").await,
             coin: optional("assets/coin.png").await,
+            booster_plus5: optional("assets/booster_plus5.png").await,
+            nexus_crystal: optional("assets/nexus_crystal.png").await,
+            level_failed: optional("assets/level_failed.png").await,
+            gem_rainbow: optional("assets/gem_rainbow.png").await,
+            gem_bomb: optional("assets/gem_bomb.png").await,
+            gem_ice: optional("assets/gem_ice.png").await,
         };
         let mut assets = assets;
         // Keep every supplied PNG path wired into the runtime asset loader. Individual screens
@@ -226,6 +234,18 @@ async fn main() {
             let w=screen_width(); let h=screen_height();
             draw_text("NEXUS SORT",w*0.5-105.0,h*0.25,38.0,Color::new(0.0,0.88,1.0,1.0));
             draw_text("KRISTAL MAGARASI",w*0.5-98.0,h*0.25+34.0,17.0,WHITE);
+            if let Some(crystal) = assets.nexus_crystal.as_ref() {
+                let side = (w * 0.34).clamp(110.0, 156.0);
+                draw_texture_ex(crystal, (w-side)*0.5, h*0.30, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            if let Some(settings) = assets.btn_settings.as_ref() {
+                let side = 44.0;
+                draw_texture_ex(settings, w-side-18.0, 22.0, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            if let Some(pipo) = assets.pipo_idle.as_ref() {
+                let side = (w * 0.19).clamp(72.0, 92.0);
+                draw_texture_ex(pipo, w-side-18.0, h*0.43, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
             let bw=(w*0.72).min(330.0); let bh=62.0; let bx=(w-bw)*0.5; let py=h*0.53; let my=py+bh+20.0;
             draw_panel_texture(assets.button.as_ref(),bx,py,bw,bh,Color::new(0.02,0.48,0.30,0.98));
             draw_text("OYNA",bx+bw*0.5-33.0,py+39.0,27.0,WHITE);
@@ -238,7 +258,13 @@ async fn main() {
         if game_state == GameState::Map {
             draw_text("NEXUS", 24.0, 52.0, 30.0, Color::new(0.0, 0.88, 1.0, 1.0));
             draw_text("MACERA HARITASI", 24.0, 84.0, 19.0, WHITE);
-            draw_text("Kristallerin yolculugu basliyor", 24.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
+            draw_text("Kristallerin yolculugu basliyor", 54.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
+            if let Some(home) = assets.btn_home.as_ref() {
+                draw_texture_ex(home, w-104.0, 24.0, WHITE, DrawTextureParams { dest_size: Some(vec2(34.0,34.0)), ..Default::default() });
+            }
+            if let Some(settings) = assets.btn_settings.as_ref() {
+                draw_texture_ex(settings, w-58.0, 24.0, WHITE, DrawTextureParams { dest_size: Some(vec2(34.0,34.0)), ..Default::default() });
+            }
             // Keep the map artwork visible; only add a light tint instead of covering it with an opaque panel.
             draw_rectangle(16.0, 130.0, w - 32.0, h - 170.0, Color::new(0.015, 0.025, 0.08, 0.24));
             // Winding path connecting level nodes.
@@ -325,6 +351,13 @@ async fn main() {
             let pw = (w * 0.86).min(420.0); let ph = 300.0; let px = (w-pw)*0.5; let py = (h-ph)*0.5;
             draw_panel_texture(assets.level_complete.as_ref().or(assets.panel.as_ref()), px, py, pw, ph, Color::new(0.025, 0.055, 0.16, 0.98));
             draw_rectangle_lines(px, py, pw, ph, 2.0, Color::new(1.0, 0.80, 0.12, 1.0));
+            if let Some(pipo) = assets.pipo_happy.as_ref() {
+                let side = 76.0;
+                draw_texture_ex(pipo, px+pw-side-16.0, py+12.0, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            if let Some(crystal) = assets.nexus_crystal.as_ref() {
+                draw_texture_ex(crystal, px+pw-58.0, py+105.0, WHITE, DrawTextureParams { dest_size: Some(vec2(38.0,38.0)), ..Default::default() });
+            }
             draw_text("BOLUM TAMAMLANDI!", px+20.0, py+48.0, 24.0, Color::new(1.0, 0.86, 0.20, 1.0));
             draw_text(&format!("Skor: {}", level.score()), px+24.0, py+94.0, 22.0, WHITE);
             draw_text(&format!("Yildizlar: {} / 3", stars.max(1)), px+24.0, py+132.0, 20.0, Color::new(1.0, 0.86, 0.20, 1.0));
@@ -445,7 +478,11 @@ async fn main() {
             draw_text(&format!("YILDIZ: {} / 3", stars.max(1)), 34.0, board_y + board_size * 0.36 + 88.0, 15.0, Color::new(1.0, 0.84, 0.16, 1.0));
             draw_text("Haritaya donmek icin dokun", 34.0, board_y + board_size * 0.36 + 108.0, 13.0, Color::new(0.55, 0.92, 1.0, 1.0));
         } else if level_finished {
-            draw_rectangle(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, Color::new(0.03, 0.04, 0.12, 0.97));
+            if let Some(failed) = assets.level_failed.as_ref() {
+                draw_texture_ex(failed, 20.0, board_y + board_size * 0.36, WHITE, DrawTextureParams { dest_size: Some(vec2(w-40.0,112.0)), ..Default::default() });
+            } else {
+                draw_rectangle(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, Color::new(0.03, 0.04, 0.12, 0.97));
+            }
             draw_rectangle_lines(20.0, board_y + board_size * 0.36, w - 40.0, 112.0, 2.0, Color::new(1.0, 0.22, 0.42, 1.0));
             draw_text("BOLUM TAMAMLANAMADI", 32.0, board_y + board_size * 0.36 + 35.0, 18.0, Color::new(1.0, 0.38, 0.52, 1.0));
             draw_text("Haritaya donmek icin dokun", 32.0, board_y + board_size * 0.36 + 72.0, 14.0, WHITE);
@@ -465,6 +502,21 @@ async fn main() {
                 let x = gap + i as f32 * (icon_side + gap);
                 draw_panel_texture(power_assets[i].as_ref(), x, power_y, icon_side, icon_side, Color::new(0.07, 0.12, 0.27, 0.95));
                 if power_assets[i].is_none() { draw_text(power_labels[i], x, power_y + icon_side + 12.0, 9.0, WHITE); }
+            }
+            if let Some(extra) = assets.booster_plus5.as_ref() {
+                let side = (icon_side * 0.62).clamp(26.0, 34.0);
+                let x = w - side - 8.0;
+                let y = power_y - side * 0.70;
+                draw_texture_ex(extra, x, y, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            // Special crystal PNGs are shown as a small preview row only; the match rules
+            // remain limited to the five implemented base colors until special mechanics exist.
+            let special_side = (cell * 0.46).clamp(16.0, 24.0);
+            for (i, texture) in [assets.gem_rainbow.as_ref(), assets.gem_bomb.as_ref(), assets.gem_ice.as_ref()].iter().enumerate() {
+                if let Some(texture) = texture {
+                    let x = w - (i as f32 + 1.0) * (special_side + 5.0) - 5.0;
+                    draw_texture_ex(texture, x, board_y - special_side - 12.0, WHITE, DrawTextureParams { dest_size: Some(vec2(special_side,special_side)), ..Default::default() });
+                }
             }
         }
 
