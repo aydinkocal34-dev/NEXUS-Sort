@@ -348,6 +348,19 @@ async fn main() {
             if just_pressed() {
                 let pointer = pointer_position();
                 let (mx, my) = (pointer.x, pointer.y);
+                // Map navigation icons are interactive, not decorative.
+                if mx >= w - 112.0 && mx <= w - 66.0 && my >= 18.0 && my <= 66.0 {
+                    game_state = GameState::MainMenu;
+                    next_frame().await;
+                    continue;
+                }
+                if mx >= w - 64.0 && mx <= w - 16.0 && my >= 18.0 && my <= 66.0 {
+                    timed_mode = !timed_mode;
+                    message = if timed_mode { String::from("Sureli mod acildi") } else { String::from("Sureli mod kapatildi") };
+                    message_timer = 2.0;
+                    next_frame().await;
+                    continue;
+                }
                 let (x, y) = nodes[0];
                 let hit_radius = (w * 0.085).clamp(34.0, 48.0);
                 if (mx - x).powi(2) + (my - y).powi(2) <= hit_radius.powi(2) && player.lives > 0 {
@@ -565,7 +578,20 @@ async fn main() {
 
         if just_pressed() {
             let pointer = pointer_position();
-                let (mx, my) = (pointer.x, pointer.y);
+            let (mx, my) = (pointer.x, pointer.y);
+            // Home returns to the map. Settings toggles the existing timer mode.
+            if mx >= w - 100.0 && mx <= w - 60.0 && my >= 18.0 && my <= 68.0 {
+                game_state = GameState::Map;
+                next_frame().await;
+                continue;
+            }
+            if mx >= w - 58.0 && mx <= w - 12.0 && my >= 18.0 && my <= 68.0 {
+                timed_mode = !timed_mode;
+                message = if timed_mode { String::from("Sureli mod acildi") } else { String::from("Sureli mod kapatildi") };
+                message_timer = 2.0;
+                next_frame().await;
+                continue;
+            }
             if level_finished || level.is_complete() {
                 game_state = GameState::Map;
             } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
@@ -596,7 +622,7 @@ async fn main() {
                             player.apply_level_outcome(LevelOutcome::Failure, now_ms());
                             level_finished = true;
                             outcome_applied = true;
-                            game_state = GameState::LevelComplete;
+                            // Keep gameplay active to show the failure panel; LevelComplete is victory-only.
                             save_player(&player);
                         }
                     }
