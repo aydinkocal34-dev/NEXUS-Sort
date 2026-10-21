@@ -190,7 +190,7 @@ async fn main() {
     }
     let mut message = String::from("Birbirine bagli 3+ kristale dokun!");
     let mut message_timer = 4.0_f32;
-    let mut game_state = GameState::Map;
+    // Start at the designed main menu; the previous shadowed Map assignment skipped it.
     let mut completed_levels = player.level_progress;
     let mut level_finished = false;
     let mut moves_left = 25_u32;
@@ -231,7 +231,8 @@ async fn main() {
             draw_text("NEXUS", 24.0, 52.0, 30.0, Color::new(0.0, 0.88, 1.0, 1.0));
             draw_text("MACERA HARITASI", 24.0, 84.0, 19.0, WHITE);
             draw_text("Kristallerin yolculugu basliyor", 24.0, 108.0, 13.0, Color::new(0.60, 0.75, 0.96, 1.0));
-            draw_rectangle(16.0, 130.0, w - 32.0, h - 170.0, Color::new(0.04, 0.07, 0.17, 0.88));
+            // Keep the map artwork visible; only add a light tint instead of covering it with an opaque panel.
+            draw_rectangle(16.0, 130.0, w - 32.0, h - 170.0, Color::new(0.015, 0.025, 0.08, 0.24));
             // Winding path connecting level nodes.
             let map_top = 190.0_f32.min(h * 0.18);
             let map_bottom = h - 150.0;
