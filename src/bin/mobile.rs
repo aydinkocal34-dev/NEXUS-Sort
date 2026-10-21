@@ -14,6 +14,8 @@ struct GameAssets {
     shatter: Option<Texture2D>, pipo_happy: Option<Texture2D>, pipo_sad: Option<Texture2D>,
     // Preload the remaining art pack so all committed PNG assets are available to the mobile build.
     extras: Vec<Texture2D>,
+    pipo_idle: Option<Texture2D>, btn_home: Option<Texture2D>, btn_settings: Option<Texture2D>,
+    btn_level: Option<Texture2D>, chest: Option<Texture2D>, coin: Option<Texture2D>,
 }
 impl GameAssets {
     async fn load() -> Self {
@@ -38,6 +40,12 @@ impl GameAssets {
             pipo_happy: optional("assets/pipo_happy.png").await,
             pipo_sad: optional("assets/pipo_sad.png").await,
             extras: Vec::new(),
+            pipo_idle: optional("assets/pipo_idle.png").await,
+            btn_home: optional("assets/btn_home.png").await,
+            btn_settings: optional("assets/btn_settings.png").await,
+            btn_level: optional("assets/btn_level.png").await,
+            chest: optional("assets/chest.png").await,
+            coin: optional("assets/coin.png").await,
         };
         let mut assets = assets;
         // Keep every supplied PNG path wired into the runtime asset loader. Individual screens
@@ -254,12 +262,28 @@ async fn main() {
                 let c = if done { Color::new(0.0, 0.95, 0.48, 1.0) } else if unlocked { Color::new(0.0, 0.82, 1.0, 1.0) } else { Color::new(0.22, 0.29, 0.43, 1.0) };
                 let node_r = (w * 0.065).clamp(25.0, 38.0);
                 draw_circle(*x, *y, node_r + 10.0, Color::new(c.r, c.g, c.b, 0.16));
-                draw_circle(*x, *y, node_r, c);
-                draw_circle(*x, *y, node_r * 0.70, Color::new(0.04, 0.08, 0.18, 1.0));
+                if let Some(sprite) = assets.btn_level.as_ref() {
+                    let side = node_r * 2.35;
+                    draw_texture_ex(sprite, *x-side*0.5, *y-side*0.5, if unlocked { WHITE } else { Color::new(0.52,0.55,0.68,1.0) }, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+                } else {
+                    draw_circle(*x, *y, node_r, c);
+                    draw_circle(*x, *y, node_r * 0.70, Color::new(0.04, 0.08, 0.18, 1.0));
+                }
                 let label = if done { "✓".to_string() } else if unlocked { (i + 1).to_string() } else { "X".to_string() };
                 draw_text(&label, *x - node_r * 0.30, *y + node_r * 0.32, node_r * 0.95, WHITE);
                 let label_x = if *x > w * 0.5 { *x - w * 0.42 } else { *x + node_r + 12.0 };
                 draw_text(names[i], label_x, *y + 5.0, 16.0, if unlocked { WHITE } else { Color::new(0.62, 0.68, 0.80, 1.0) });
+            }
+            if let Some(pipo) = assets.pipo_idle.as_ref() {
+                let side = (w * 0.22).clamp(76.0, 104.0);
+                draw_texture_ex(pipo, w-side-12.0, h-150.0-side*0.58, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            if let Some(chest) = assets.chest.as_ref() {
+                let side = (w * 0.14).clamp(48.0, 66.0);
+                draw_texture_ex(chest, 18.0, h-148.0-side*0.55, WHITE, DrawTextureParams { dest_size: Some(vec2(side,side)), ..Default::default() });
+            }
+            if let Some(coin) = assets.coin.as_ref() {
+                draw_texture_ex(coin, 24.0, 116.0, WHITE, DrawTextureParams { dest_size: Some(vec2(24.0,24.0)), ..Default::default() });
             }
             draw_text("1. BOLUM", 24.0, h - 58.0, 15.0, Color::new(0.0, 0.88, 1.0, 1.0));
             if player.lives == 0 {
