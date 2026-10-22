@@ -25,7 +25,17 @@ struct GameAssets {
 impl GameAssets {
     async fn load() -> Self {
         async fn optional(path: &str) -> Option<Texture2D> {
-            match load_texture(path).await { Ok(t) => { t.set_filter(FilterMode::Linear); Some(t) }, Err(_) => None }
+            match load_texture(path).await {
+                Ok(texture) => {
+                    texture.set_filter(FilterMode::Linear);
+                    Some(texture)
+                }
+                Err(error) => {
+                    // Preserve a visible diagnostic instead of silently hiding missing assets.
+                    eprintln!("NEXUS SORT: PNG yuklenemedi: {path}: {error}");
+                    None
+                }
+            }
         }
         let assets = Self {
             menu_bg: optional("assets/menu_bg.png").await.or(optional("assets/main_menu_mockup.png").await),
@@ -451,15 +461,19 @@ async fn main() {
         // Responsive layout: size the 8x8 board from the actual available
         // viewport, keeping the HUD above it and the instruction/footer below.
         let horizontal_margin = (w * 0.035).clamp(8.0, 18.0);
-        let board_top = (h * 0.115).clamp(118.0, 205.0);
-        let footer_reserve = (h * 0.075).clamp(52.0, 88.0);
-        let available_board_h = (h - board_top - footer_reserve - 28.0).max(160.0);
-        let cell = (((w - horizontal_margin * 2.0) / 8.0)
-            .min(available_board_h / 8.0))
+        // The HUD ends at y=202. Start the board below it and reserve enough
+        // room for the instruction, power-up labels, and Android bottom inset.
+        let board_top = (h * 0.235).clamp(210.0, 232.0);
+        let footer_reserve = (h * 0.17).clamp(124.0, 154.0);
+        let available_board_h = (h - board_top - footer_reserve).max(160.0);
+        let cell = ((w - horizontal_margin * 2.0) / 8.0)
+            .min(available_board_h / 8.0)
             .max(1.0);
         let board_size = cell * 8.0;
         let board_x = (w - board_size) * 0.5;
-        let board_y = board_top + ((available_board_h - board_size) * 0.5).max(0.0);
+        // Top-align the board within its reserved area to avoid the oversized
+        // blank gap caused by centering it vertically below the HUD.
+        let board_y = board_top;
         draw_rectangle(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, Color::new(0.05, 0.10, 0.23, 0.96));
         draw_rectangle_lines(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, 2.0, Color::new(0.0, 0.82, 1.0, 0.8));
 
@@ -551,13 +565,31 @@ async fn main() {
             }
             draw_text("NEON KRISTALLER  /  BOLUM 01", 22.0, h - 82.0, 12.0, Color::new(0.38, 0.54, 0.78, 1.0));
             // Reserved, responsive power-up strip. Icons appear automatically when assets are supplied.
-            let power_y = h - 68.0; let icon_side = (w * 0.14).clamp(38.0, 54.0); let gap = (w - icon_side * 4.0) / 5.0;
+            let icon_side = (w * 0.12).clamp(38.0, 46.0);
+            let power_y = h - icon_side - 38.0;
+            let gap = (w - icon_side * 4.0) / 5.0;
             let power_assets = [&assets.hammer, &assets.bomb, &assets.rainbow, &assets.shuffle];
             let power_labels = ["CEKIC", "BOMBA", "YILDIZ", "KARISTIR"];
             for i in 0..4 {
                 let x = gap + i as f32 * (icon_side + gap);
-                draw_panel_texture(power_assets[i].as_ref(), x, power_y, icon_side, icon_side, Color::new(0.07, 0.12, 0.27, 0.95));
-                if power_assets[i].is_none() { draw_text(power_labels[i], x, power_y + icon_side + 12.0, 9.0, WHITE); }
+                // Always draw a clear button frame and readable label. Some supplied
+                // PNGs are dark atlas crops, so an image alone is not a usable control.
+                draw_rectangle(x - 3.0, power_y - 3.0, icon_side + 6.0, icon_side + 32.0,
+                    Color::new(0.025, 0.045, 0.12, 0.96));
+                draw_rectangle_lines(x - 3.0, power_y - 3.0, icon_side + 6.0, icon_side + 32.0,
+                    1.5, Color::new(0.0, 0.72, 0.96, 0.9));
+                if let Some(texture) = power_assets[i].as_ref() {
+                    draw_texture_ex(texture, x + 4.0, power_y + 1.0, WHITE,
+                        DrawTextureParams { dest_size: Some(vec2(icon_side - 8.0, icon_side - 8.0)), ..Default::default() });
+                } else {
+                    let symbol = ["⚒", "✹", "✦", "↻"][i];
+                    draw_text(symbol, x + 5.0, power_y + icon_side * 0.72, 25.0,
+                        Color::new(0.0, 0.88, 1.0, 1.0));
+                }
+                let label_size = if i == 3 { 8.0 } else { 9.0 };
+                let label_width = measure_text(power_labels[i], None, label_size as u16, 1.0).width;
+                draw_text(power_labels[i], x + (icon_side - label_width) * 0.5,
+                    power_y + icon_side + 19.0, label_size, WHITE);
             }
             if let Some(extra) = assets.booster_plus5.as_ref() {
                 let side = (icon_side * 0.62).clamp(26.0, 34.0);
