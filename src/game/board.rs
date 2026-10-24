@@ -136,6 +136,45 @@ impl Board {
         self.apply_gravity_and_refill();
         Ok(cleared)
     }
+    /// Clears a single cell, then applies gravity and refills the column.
+    pub fn clear_cell(&mut self, row: usize, col: usize) -> Result<usize, BoardError> {
+        let index = self.index(row, col)?;
+        if self.cells[index].is_none() { return Ok(0); }
+        self.cells[index] = None;
+        self.apply_gravity_and_refill();
+        Ok(1)
+    }
+
+    /// Clears the bounded 3x3 area centered on a cell, then refills the board.
+    pub fn clear_area(&mut self, row: usize, col: usize) -> Result<usize, BoardError> {
+        let center = self.index(row, col)?;
+        let center_row = center / self.size;
+        let center_col = center % self.size;
+        let mut cleared = 0;
+        for r in center_row.saturating_sub(1)..=(center_row + 1).min(self.size - 1) {
+            for c in center_col.saturating_sub(1)..=(center_col + 1).min(self.size - 1) {
+                let index = r * self.size + c;
+                if self.cells[index].take().is_some() { cleared += 1; }
+            }
+        }
+        if cleared > 0 { self.apply_gravity_and_refill(); }
+        Ok(cleared)
+    }
+
+    /// Randomizes the board and forces one guaranteed adjacent triple.
+    pub fn shuffle_with_valid_move(&mut self) {
+        for index in 0..self.cells.len() {
+            let color = self.random_color();
+            self.cells[index] = Some(color);
+        }
+        if self.size >= 3 {
+            let color = self.random_color();
+            self.cells[0] = Some(color);
+            self.cells[1] = Some(color);
+            self.cells[2] = Some(color);
+        }
+    }
+
     fn apply_gravity_and_refill(&mut self) {
         for col in 0..self.size {
             let mut write_row = self.size;
