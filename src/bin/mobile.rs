@@ -467,9 +467,9 @@ async fn main() {
         let horizontal_margin = (w * 0.035).clamp(8.0, 18.0);
         // The HUD ends at y=202. Start the board below it and reserve enough
         // room for the instruction, power-up labels, and Android bottom inset.
-        let board_top = (h * 0.235).clamp(210.0, 232.0);
-        let footer_reserve = (h * 0.17).clamp(124.0, 154.0);
-        let available_board_h = (h - board_top - footer_reserve).max(160.0);
+        let board_top = 210.0_f32.min((h * 0.25).max(112.0));
+        let footer_reserve = (h * 0.16).clamp(112.0, 142.0);
+        let available_board_h = (h - board_top - footer_reserve).max(120.0);
         let cell = ((w - horizontal_margin * 2.0) / 8.0)
             .min(available_board_h / 8.0)
             .max(1.0);
@@ -570,7 +570,7 @@ async fn main() {
             draw_text("NEON KRISTALLER  /  BOLUM 01", 22.0, h - 82.0, 12.0, Color::new(0.38, 0.54, 0.78, 1.0));
             // Reserved, responsive power-up strip. Icons appear automatically when assets are supplied.
             let icon_side = (w * 0.12).clamp(38.0, 46.0);
-            let power_y = h - icon_side - 38.0;
+            let power_y = (board_y + board_size + 78.0).min(h - icon_side - 54.0).max(board_y + board_size + 30.0);
             let gap = (w - icon_side * 4.0) / 5.0;
             let power_assets = [&assets.hammer, &assets.bomb, &assets.rainbow, &assets.shuffle];
             let power_labels = ["CEKIC", "BOMBA", "YILDIZ", "KARISTIR"];
@@ -633,7 +633,7 @@ async fn main() {
             } else {
                 // Power-up hitboxes use the same screen-space layout as their visible buttons.
                 let icon_side = (w * 0.12).clamp(38.0, 46.0);
-                let power_y = h - icon_side - 38.0;
+                let power_y = (board_y + board_size + 78.0).min(h - icon_side - 54.0).max(board_y + board_size + 30.0);
                 let gap = (w - icon_side * 4.0) / 5.0;
                 let mut handled_powerup = false;
                 for i in 0..4 {
