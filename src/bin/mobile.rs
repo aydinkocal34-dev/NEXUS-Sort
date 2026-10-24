@@ -467,7 +467,8 @@ async fn main() {
         let horizontal_margin = (w * 0.035).clamp(8.0, 18.0);
         // The HUD ends at y=202. Start the board below it and reserve enough
         // room for the instruction, power-up labels, and Android bottom inset.
-        let board_top = 210.0_f32.min((h * 0.25).max(112.0));
+        // Keep the board below the complete HUD even on short Android viewports.
+        let board_top = 210.0_f32.min((h - 420.0).max(202.0));
         let footer_reserve = (h * 0.16).clamp(112.0, 142.0);
         let available_board_h = (h - board_top - footer_reserve).max(120.0);
         let cell = ((w - horizontal_margin * 2.0) / 8.0)
@@ -647,7 +648,20 @@ async fn main() {
                             2 => { selected_powerup = Some(Powerup::Star); message = String::from("YILDIZ: Bagli grubu sec"); message_timer = 2.0; }
                             _ => {
                                 match level.use_shuffle() {
-                                    Ok(()) => { moves_left = moves_left.saturating_sub(1); selected_powerup = None; message = String::from("Kristaller karistirildi!"); message_timer = 2.0; }
+                                    Ok(()) => {
+                                        moves_left = moves_left.saturating_sub(1);
+                                        selected_powerup = None;
+                                        message = String::from("Kristaller karistirildi!");
+                                        message_timer = 2.0;
+                                        if moves_left == 0 && !level.is_complete() {
+                                            level_finished = true;
+                                            if !outcome_applied {
+                                                player.apply_level_outcome(LevelOutcome::Failure, now_ms());
+                                                outcome_applied = true;
+                                                save_player(&player);
+                                            }
+                                        }
+                                    }
                                     Err(error) => { message = format!("Karistirma hatasi: {error}"); message_timer = 2.0; }
                                 }
                             }
