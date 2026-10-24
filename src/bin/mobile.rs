@@ -243,7 +243,8 @@ async fn main() {
     let mut level_started = false;
     let mut stars = 0_u8;
     let mut burst_timer = 0.0_f32;
-    let mut burst_center = vec2(0.0, 0.0);\n    let mut selected_powerup: Option<Powerup> = None;
+    let mut burst_center = vec2(0.0, 0.0);
+    let mut selected_powerup: Option<Powerup> = None;
 
     loop {
         let w = screen_width();
