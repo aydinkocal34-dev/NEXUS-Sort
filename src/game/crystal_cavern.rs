@@ -63,6 +63,42 @@ impl CrystalCavernLevel {
         }
     }
 
+    fn record_powerup_clear(&mut self, cleared: usize) -> Result<usize, CrystalCavernError> {
+        if cleared == 0 { return Ok(0); }
+        let count = u64::try_from(cleared).map_err(|_| CrystalCavernError::ScoreOverflow)?;
+        let gained = count.checked_mul(POINTS_PER_CRYSTAL).ok_or(CrystalCavernError::ScoreOverflow)?;
+        let new_score = self.score.checked_add(gained).ok_or(CrystalCavernError::ScoreOverflow)?;
+        let new_cleared = self.cleared_crystals.checked_add(count).ok_or(CrystalCavernError::ScoreOverflow)?;
+        let new_moves = self.moves.checked_add(1).ok_or(CrystalCavernError::ScoreOverflow)?;
+        self.score = new_score;
+        self.cleared_crystals = new_cleared;
+        self.moves = new_moves;
+        Ok(cleared)
+    }
+
+    /// Hammer removes one selected crystal.
+    pub fn use_hammer(&mut self, row: usize, col: usize) -> Result<usize, CrystalCavernError> {
+        if self.is_complete() { return Ok(0); }
+        let cleared = self.board.clear_cell(row, col)?;
+        self.record_powerup_clear(cleared)
+    }
+
+    /// Bomb removes the selected cell and its neighbors in a 3x3 area.
+    pub fn use_bomb(&mut self, row: usize, col: usize) -> Result<usize, CrystalCavernError> {
+        if self.is_complete() { return Ok(0); }
+        let cleared = self.board.clear_area(row, col)?;
+        self.record_powerup_clear(cleared)
+    }
+
+    /// Shuffle consumes one move and guarantees a valid adjacent triple.
+    pub fn use_shuffle(&mut self) -> Result<(), CrystalCavernError> {
+        if self.is_complete() { return Ok(()); }
+        let new_moves = self.moves.checked_add(1).ok_or(CrystalCavernError::ScoreOverflow)?;
+        self.board.shuffle_with_valid_move();
+        self.moves = new_moves;
+        Ok(())
+    }
+
     pub fn play_at(&mut self, row: usize, col: usize) -> Result<usize, CrystalCavernError> {
         if self.is_complete() { return Ok(0); }
         let group_size = self.board.group_size(row, col)?;
