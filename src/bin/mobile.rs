@@ -3,6 +3,9 @@ use macroquad::prelude::*;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum GameState { MainMenu, Map, Playing, LevelComplete }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Powerup { Hammer, Bomb, Star }
+
 #[derive(Default)]
 struct GameAssets {
     menu_bg: Option<Texture2D>, map_bg: Option<Texture2D>, board_bg: Option<Texture2D>, cavern_bg: Option<Texture2D>, gameplay_mockup: Option<Texture2D>,
@@ -240,7 +243,7 @@ async fn main() {
     let mut level_started = false;
     let mut stars = 0_u8;
     let mut burst_timer = 0.0_f32;
-    let mut burst_center = vec2(0.0, 0.0);
+    let mut burst_center = vec2(0.0, 0.0);\n    let mut selected_powerup: Option<Powerup> = None;
 
     loop {
         let w = screen_width();
@@ -626,11 +629,42 @@ async fn main() {
             }
             if level_finished || level.is_complete() {
                 game_state = GameState::Map;
-            } else if !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
+            } else {
+                // Power-up hitboxes use the same screen-space layout as their visible buttons.
+                let icon_side = (w * 0.12).clamp(38.0, 46.0);
+                let power_y = h - icon_side - 38.0;
+                let gap = (w - icon_side * 4.0) / 5.0;
+                let mut handled_powerup = false;
+                for i in 0..4 {
+                    let x = gap + i as f32 * (icon_side + gap);
+                    if mx >= x - 3.0 && mx <= x + icon_side + 3.0
+                        && my >= power_y - 3.0 && my <= power_y + icon_side + 29.0 {
+                        handled_powerup = true;
+                        match i {
+                            0 => { selected_powerup = Some(Powerup::Hammer); message = String::from("CEKIC: Bir kristal sec"); message_timer = 2.0; }
+                            1 => { selected_powerup = Some(Powerup::Bomb); message = String::from("BOMBA: Patlatilacak alani sec"); message_timer = 2.0; }
+                            2 => { selected_powerup = Some(Powerup::Star); message = String::from("YILDIZ: Bagli grubu sec"); message_timer = 2.0; }
+                            _ => {
+                                match level.use_shuffle() {
+                                    Ok(()) => { moves_left = moves_left.saturating_sub(1); selected_powerup = None; message = String::from("Kristaller karistirildi!"); message_timer = 2.0; }
+                                    Err(error) => { message = format!("Karistirma hatasi: {error}"); message_timer = 2.0; }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                if !handled_powerup && !level_finished && mx >= board_x && mx < board_x + board_size && my >= board_y && my < board_y + board_size {
                 level_started = true;
                 let col = ((mx - board_x) / cell) as usize;
                 let row = ((my - board_y) / cell) as usize;
-                match level.play_at(row, col) {
+                let action = selected_powerup.take();
+                let play_result = match action {
+                    Some(Powerup::Hammer) => level.use_hammer(row, col),
+                    Some(Powerup::Bomb) => level.use_bomb(row, col),
+                    Some(Powerup::Star) | None => level.play_at(row, col),
+                };
+                match play_result {
                     Ok(0) => {
                         message = String::from("Bu grupta en az 3 bagli kristal olmali.");
                         message_timer = 2.2;
@@ -662,6 +696,7 @@ async fn main() {
                         message = format!("Hamle hatasi: {error}");
                         message_timer = 2.4;
                     }
+                }
                 }
             }
         }
