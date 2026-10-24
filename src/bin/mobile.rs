@@ -189,11 +189,15 @@ fn just_pressed() -> bool {
 // mouse_position() can remain stale on devices when Macroquad does not
 // synthesize mouse motion from touch input.
 fn pointer_position() -> Vec2 {
-    touches()
-        .iter()
-        .find(|touch| touch.phase == TouchPhase::Started)
-        .map(|touch| touch.position)
-        .unwrap_or_else(|| { let (x, y) = mouse_position(); vec2(x, y) })
+    // Prefer real Android touch coordinates; some devices report Started for
+    // only one frame, then Moved. This avoids falling back to stale mouse data.
+    let active_touches = touches();
+    if let Some(touch) = active_touches.iter().find(|touch| touch.phase == TouchPhase::Started)
+        .or_else(|| active_touches.iter().find(|touch| touch.phase == TouchPhase::Moved)) {
+        return touch.position;
+    }
+    let (x, y) = mouse_position();
+    vec2(x, y)
 }
 
 fn draw_background(assets: &GameAssets, state: GameState) {
@@ -435,7 +439,7 @@ async fn main() {
 
         let card_y = 100.0;
         draw_panel_texture(assets.panel_wide.as_ref().or(assets.panel.as_ref()), 16.0, card_y, w - 32.0, 102.0, Color::new(0.06, 0.09, 0.22, 0.88));
-        draw_rectangle_lines(16.0, card_y, w - 32.0, 102.0, 1.4, Color::new(0.0, 0.78, 1.0, 0.55));
+        draw_rectangle_lines(16.0, card_y, w - 32.0, 102.0, 2.0, Color::new(0.87, 0.58, 0.16, 0.90));
         draw_text("SKOR", 30.0, 126.0, 14.0, Color::new(0.60, 0.72, 0.92, 1.0));
         draw_text(&format!("{}", level.score()), 30.0, 159.0, 31.0, WHITE);
         draw_text("HEDEF", w - 118.0, 126.0, 14.0, Color::new(0.60, 0.72, 0.92, 1.0));
@@ -479,8 +483,9 @@ async fn main() {
         // Top-align the board within its reserved area to avoid the oversized
         // blank gap caused by centering it vertically below the HUD.
         let board_y = board_top;
-        draw_rectangle(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, Color::new(0.05, 0.10, 0.23, 0.96));
-        draw_rectangle_lines(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, 2.0, Color::new(0.0, 0.82, 1.0, 0.8));
+        draw_rectangle(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, Color::new(0.025, 0.035, 0.085, 0.98));
+        draw_rectangle_lines(board_x - 7.0, board_y - 7.0, board_size + 14.0, board_size + 14.0, 2.5, Color::new(0.87, 0.58, 0.16, 0.95));
+        draw_rectangle_lines(board_x - 3.0, board_y - 3.0, board_size + 6.0, board_size + 6.0, 1.0, Color::new(0.99, 0.83, 0.39, 0.38));
 
         for row in 0..8 {
             for col in 0..8 {
@@ -580,9 +585,11 @@ async fn main() {
                 // Always draw a clear button frame and readable label. Some supplied
                 // PNGs are dark atlas crops, so an image alone is not a usable control.
                 draw_rectangle(x - 3.0, power_y - 3.0, icon_side + 6.0, icon_side + 32.0,
-                    Color::new(0.025, 0.045, 0.12, 0.96));
+                    Color::new(0.035, 0.045, 0.105, 0.97));
                 draw_rectangle_lines(x - 3.0, power_y - 3.0, icon_side + 6.0, icon_side + 32.0,
-                    1.5, Color::new(0.0, 0.72, 0.96, 0.9));
+                    2.0, Color::new(0.87, 0.58, 0.16, 0.95));
+                draw_rectangle_lines(x, power_y, icon_side, icon_side, 1.0,
+                    Color::new(0.99, 0.83, 0.39, 0.28));
                 if let Some(texture) = power_assets[i].as_ref() {
                     draw_texture_ex(texture, x + 4.0, power_y + 1.0, WHITE,
                         DrawTextureParams { dest_size: Some(vec2(icon_side - 8.0, icon_side - 8.0)), ..Default::default() });
